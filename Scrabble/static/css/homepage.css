@@ -1,0 +1,155 @@
+body {
+    background-image: url('../images/cognex.png');
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.left {
+    float: left;
+}
+
+.right {
+    float: right;
+}
+
+.clear {
+    clear: both;
+}
+
+.flash {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: x-large;
+    color: blue;
+}
+
+.maincolumn {
+    background-color: black;
+    padding: 20px;
+    width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.title {
+    font-size: xx-large;
+    color: white;
+}
+
+.link {
+    font-size: x-large;
+    color: turquoise;
+    padding-top: 25px;
+}
+
+.label {
+    font-size: x-large;
+    color: yellow;
+}
+
+.game .urgent {
+    font-size: x-large;
+    color: red;
+}
+
+.invite, .game {
+    background-color: white;
+    padding: 10px;
+}
+
+.invite .players, .game .players {
+    text-align: center;
+    margin: auto;
+    padding-top: 20px;
+}
+
+.game {
+    cursor: pointer;
+}
+
+.invite table, .game table {
+    width: 100%;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+    text-align: center;
+}
+
+.invite td {
+    width: 33%;
+}
+
+.game td {
+    width: 25%;
+}
+
+.joinbtn {
+    width: 50%;
+}
+
+.game_spacer {
+    margin-bottom: 50px;
+}
+
+/*************************************************/
+
+.board {
+    background-color: white;
+    float: left;
+    margin-top: 20px;
+    margin-left: 20px;
+}
+
+.controls {
+    background-color: white;
+    position: fixed;
+    right: 0;
+    top: 0;
+    margin-top: 28px;
+    margin-right: 20px;
+    padding: 20px;
+    font-size: x-large;
+}
+
+.scores {
+    width: 100%;
+    padding-bottom: 50px;
+}
+
+.scores td {
+    text-align: center;
+}
+
+.scores .yourturn {
+    border: 1px solid;
+    background-color: yellow;
+}
+
+.scores p {
+    font-size: x-large;
+}
+
+.bank {
+    padding-bottom: 40px;
+}
+
+.chatbox {
+    background-color: white;
+    padding: 20px;
+    font-size: large;
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    margin-bottom: 20px;
+    margin-right: 20px;
+}
+
+.chatbox .wrapper {
+    max-width: 570px;
+    max-height: 300px;
+    overflow: scroll;
+}
+
+.chatbox #_inputtext {
+    margin-bottom: 10px;
+}
+
+.chatbox #_user {
+    color: blue;
+}

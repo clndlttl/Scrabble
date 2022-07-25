@@ -1,0 +1,5 @@
+<div class="wrapper">
+{% for chat in chats|reverse %}
+<p><span id="_user">{{ chat.user }}: </span><span id="_text">{{ chat.text }}</span></p>
+{% endfor %}
+</div>

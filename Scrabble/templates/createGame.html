@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="form">
+<h1 style="color: yellow">Create Game</h1>
+
+<form action="" method="post">
+
+  {{ form.hidden_tag() }}
+
+  <p>
+    {{ form.name.label }}<br>
+    {{ form.name(size=64) }}<br>
+    {% for error in form.name.errors %}
+      <span style="color: red;">[{{ error }}]</span>
+    {% endfor %}  
+  </p>
+
+  <p>
+    {{ form.select1.label }}<br>
+    {{ form.select1 }}<br>
+    {% for error in form.select1.errors %}
+      <span style="color: red;">[{{ error }}]</span>
+    {% endfor %}  
+  </p>
+
+  <p>
+    {{ form.select2.label }}<br>
+    {{ form.select2 }}<br>
+    {% for error in form.select2.errors %}
+      <span style="color: red;">[{{ error }}]</span>
+    {% endfor %}  
+  </p>
+
+  <p>
+    {{ form.select3.label }}<br>
+    {{ form.select3 }}<br>
+    {% for error in form.select3.errors %}
+      <span style="color: red;">[{{ error }}]</span>
+    {% endfor %}  
+  </p>
+
+  <p>
+    {{ form.random.label }}<br>
+    {{ form.random }}<br>
+  </p>
+
+  <p>
+    {{ form.submit() }}
+  </p>
+
+</form>
+
+</div>
+
+{% endblock %}

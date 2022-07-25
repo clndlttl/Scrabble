@@ -1,0 +1,43 @@
+<html>
+<head>
+  <title>Cognex Scrabble</title>
+  <link rel="stylesheet" href="../static/css/homepage.css">
+  <script src="{{ url_for('static', filename='js/jquery-3.6.0.min.js') }}"></script>
+</head>
+<body>
+
+<div id="_main"></div>
+
+<script>
+  var inLobby = true;
+
+  const _showLobby = "{{ url_for('showLobby') }}"
+  function showLobby() {
+    $.get(_showLobby, function(data, status) {
+      $('#_main').html(data);
+      inLobby = true;
+    });
+  }
+
+  window.onload = function() {
+    showLobby();    
+  }
+
+  const refresh = window.setInterval( function(){
+    if (inLobby) {
+      showLobby();
+    }
+  }, 60000);
+  
+  const _showBoard = "{{ url_for('showBoard') }}";
+  function showBoard(gameId) {
+
+    $.get(_showBoard+"?id="+gameId, function(data, status) {
+      $('#_main').html(data);
+      inLobby = false;
+    });
+  }
+</script>
+
+</body>
+</html>

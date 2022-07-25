@@ -1,0 +1,224 @@
+<table class="board">
+    {% for row in range(1,16) %}
+    <tr>
+        {% for col in range(1,16) %}
+        <td id="_tile_{{row}}_{{col}}">
+            <img class="tile"
+             onclick="setBoundary('{{row}}','{{col}}')"
+             onmouseenter="highlightWord('{{row}}','{{col}}')"
+             src="{{ tiles.get(board.getTile(row,col)) }}">
+        </td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
+
+<div class="controls">
+<table class="scores">
+    <tr>
+        {% if board.game.whosUp == board.game.player1 %}
+        <td class="yourturn">
+        {% else %}
+        <td>
+        {% endif %}
+            <p>{{ getUsername(board.game.player1) }}</p>
+        </td>
+        {% if board.game.whosUp == board.game.player2 %}
+        <td class="yourturn">
+        {% else %}
+        <td>
+        {% endif %}
+            <p>{{ getUsername(board.game.player2) }}</p>
+        </td>
+        {% if board.game.player3 %}
+        {% if board.game.whosUp == board.game.player3 %}
+        <td class="yourturn">
+        {% else %}
+        <td>
+        {% endif %}
+            <p>{{ getUsername(board.game.player3) }}</p>
+        </td>
+        {% endif %}
+        {% if board.game.player4 %}
+        {% if board.game.whosUp == board.game.player4 %}
+        <td class="yourturn">
+        {% else %}
+        <td>
+        {% endif %}
+            <p>{{ getUsername(board.game.player4) }}</p>
+        </td>
+        {% endif %}
+    </tr>
+    <tr>
+        <td>
+            <p>{{ board.game.score1 }}</p>
+        </td>
+        <td>
+            <p>{{ board.game.score2 }}</p>
+        </td>
+        {% if board.game.player3 %}
+        <td>
+            <p>{{ board.game.score3 }}</p>
+        </td>
+        {% endif %}
+        {% if board.game.player4 %}
+        <td>
+            <p>{{ board.game.score4 }}</p>
+        </td>
+        {% endif %}
+    </tr>
+</table>
+
+<table class="bank">
+    <tr>
+        {% for letter in bank %}
+        <td>
+            <img class="tile" src="{{ tiles.get(letter) }}">
+        </td>
+        {% endfor %}
+    </tr>
+</table>
+
+{% if board.game.whosUp == current_user.id %}
+<p>Click and drag on board to define word location</p>
+<input id="_word" type="text" value="Enter your word here" onfocus="this.value=''">
+<button onclick="playWord()">Play</button>
+<button onclick="swapTiles()">Swap</button>
+<p style="color: red" id="_msg"></p>
+{% endif %}
+
+{% include "_get_flash.html" %}
+
+<button onclick="showLobby()">Return to Lobby</button>
+
+<script>
+    var mouseIsDown = false;
+    var startRow = 0;
+    var startCol = 0;
+    var endRow = 0;
+    var endCol = 0;
+    var direction = undefined;
+    function clearHighlights() {
+        for (let r = 0; r < 16; r++) {
+            for (let c = 0; c < 16; c++) {
+                $('#_tile_'+r.toString()+'_'+c.toString()).css('background-color','white');
+            }
+        }
+    }
+    function setBoundary(row,col) {  // onclick
+        mouseIsDown = !mouseIsDown;
+
+        if (mouseIsDown) {
+            clearHighlights();
+            startRow = parseInt(row);
+            startCol = parseInt(col);
+            $('#_tile_'+row+'_'+col).css('background-color','green');
+        } else {
+            endRow = parseInt(row);
+            endCol = parseInt(col);
+        
+            if ( (endRow > startRow) && (endCol == startCol) ) {
+                direction = 'D';
+            } else if ( (endCol > startCol) && (endRow == startRow) ) {
+                direction = 'A';
+            } else {
+                clearHighlights();
+            }
+        }
+    }
+    function highlightWord(row,col) {  // onmouseenter
+        if (mouseIsDown) {
+            $('#_tile_'+row+'_'+col).css('background-color','green');
+        }
+    }
+    function playWord() {
+        var fd = new FormData();
+        fd.append('board_id', "{{ board.id }}")
+        fd.append('word', $('#_word').val());
+        fd.append('direction', direction);
+        fd.append('row', startRow);
+        fd.append('col', startCol);
+
+        document.body.style.cursor = 'wait';
+
+        $.ajax({
+            url: "{{ url_for('playWord') }}",
+            type: 'POST',
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            data: fd,
+            success: function(data, textStatus) {
+                document.body.style.cursor = 'default';
+                if (data.ERROR.length) {
+                    $('#_msg').html(data.ERROR);
+                }
+                else {
+                    showBoard("{{ board.game_id }}");
+                }
+            }
+        });
+    }
+    function swapTiles() {
+        var fd = new FormData();
+        fd.append('board_id', "{{ board.id }}")
+        fd.append('word', $('#_word').val());
+        
+        $.ajax({
+            url: "{{ url_for('swapTiles') }}",
+            type: 'POST',
+            processData: false,
+            contentType: false,
+            dataType: 'json',
+            data: fd,
+            success: function(data, textStatus) {
+                if (data.ERROR.length) {
+                    $('#_msg').html(data.ERROR);
+                }
+                else {
+                    showBoard("{{ board.game_id }}");
+                }
+            }
+        });
+    }
+</script>
+
+</div>
+
+<div class="chatbox">
+    <input type="text" id="_inputtext" size="64">
+    <div id="_history">
+        <div class="wrapper">
+        {% for chat in board.chats|reverse %}
+        <p><span id="_user">{{ chat.user }}: </span><span id="_text">{{ chat.text }}</span></p>
+        {% endfor %}
+        </div>
+    </div>
+    <script>
+        $("#_inputtext").on('keyup', function (event) {
+            if (event.keyCode === 13) {
+                var t = $('#_inputtext').val();
+                if (t.length > 0) {
+                    var fd = new FormData();
+                    fd.append('user', "{{ current_user.username }}");
+                    fd.append('text', t);
+                    fd.append('board_id', '{{ board.id }}');
+                    
+                    $.ajax({
+                        url: "{{ url_for('postChat') }}",
+                        type: 'POST',
+                        processData: false,
+                        contentType: false,
+                        dataType: 'html',
+                        data: fd,
+                        success: function(data, textStatus) {
+                            $('#_history').html(data);
+                            $('#_inputtext').val('');
+                        }
+                    });
+                }
+            }
+        });
+        
+    </script>
+</div>

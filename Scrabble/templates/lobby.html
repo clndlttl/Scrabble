@@ -1,0 +1,142 @@
+<div class="maincolumn">
+
+<p class="left title">Welcome,&nbsp;</p>
+
+{% for letter in current_user.username %}
+  <img class="left" src="{{ tiles.get(letter) }}">
+{% endfor %}
+
+<a class="link right" href="{{ url_for('logout') }}">Log out</a>
+
+<hr class="clear">
+
+<a class="link" href="{{ url_for('createGame') }}">Create a new game</a>
+
+{% if pending %}
+<p class="label">You're invited to join these games:</p>
+{% endif %}
+
+{% for game in pending %}
+{% if not game.hasBegun %}
+
+<div class="invite">
+
+  <table>
+    <tr>
+      <td>
+        <p class="gamename"><i>"{{ game.name }}"</i></p>
+      </td>
+      <td>
+        <p>created {{ game.printElapsedTime() }}</p>
+      </td>
+      <td>
+        <button class="joinbtn" onclick="joinGame('{{ game.id }}')">Join</button>
+      </td>
+    </tr>
+  </table>
+
+  <p class="players"><b>Players:</b> {{ getUsername( game.player1 ) }}
+{% if game.player2 %}, {{ getUsername( game.player2 ) }}{% endif %}
+{% if game.player3 %}, {{ getUsername( game.player3 ) }}{% endif %}
+{% if game.player4 %}, {{ getUsername( game.player4 ) }}{% endif %}
+  </p>
+
+</div>
+
+<div class="game_spacer"></div>
+
+{% endif %}
+{% endfor %}
+
+{% if accepted %}
+<p class="label">Your active games:</p>
+{% endif %}
+
+{% for game in accepted %}
+
+{% if game.player2 %}
+<div class="game" onclick="showBoard('{{ game.id }}')">
+{% else %}
+<div class="game">
+{% endif %}
+
+  <table>
+    <tr>
+      <td>
+        <p class="gamename"><i>"{{ game.name }}"</i></p>
+      </td>
+      
+      <td>
+        <p>created {{ game.printElapsedTime() }}</p>
+      </td>
+      <td>
+        {% if game.winner == current_user.id %}
+        <p class="urgent">You have won!</p>
+        {% elif game.winner %}
+        <p>{{ getUsername(game.winner) }} has won</p>
+        {% elif game.whosUp == current_user.id %}
+        <p class="urgent">Your turn!</p>
+        {% else %}
+        <p>{{ getUsername( game.whosUp ) }}'s turn</p>
+        {% endif %}
+      </td>
+      <td>
+        <p>{{ strlen( game.pool ) }} letters left</p>
+      </td>
+    </tr>
+  </table>
+
+  <p class="players"><b>Players:</b> {{ getUsername( game.player1 ) }}
+{% if game.player2 %}, {{ getUsername( game.player2 ) }}{% endif %}
+{% if game.player3 %}, {{ getUsername( game.player3 ) }}{% endif %}
+{% if game.player4 %}, {{ getUsername( game.player4 ) }}{% endif %}
+  </p>
+
+  {% if game.isComplete and game.winner == current_user.id %}
+  <button class="deleteGameBtn" onclick="deleteGame('{{ game.id }}')">Delete Game</button>
+  {% endif %}
+
+</div>
+
+<div class="game_spacer"></div>
+
+{% endfor %}
+
+{% include "_get_flash.html" %}
+</div>
+
+
+<script>
+  function joinGame(gameId) {
+    var fd = new FormData;
+    fd.append('game_id', gameId);
+    
+    $.ajax({
+      url: "{{ url_for('joinGame') }}",
+      type: 'POST',
+      processData: false,
+      contentType: false,
+      dataType: 'html',
+      data: fd,
+      success: function(data, textStatus) {
+        $('#_main').html(data);
+      }
+    });
+  }
+  function deleteGame(gameId) {
+    var fd = new FormData;
+    fd.append('game_id', gameId);
+
+    $.ajax({
+      url: "{{ url_for('deleteGame') }}",
+      type: 'POST',
+      processData: false,
+      contentType: false,
+      dataType: 'html',
+      data: fd,
+      success: function(data, textStatus) {
+        $('#_main').html(data);
+      }     
+    });
+  }
+</script>
