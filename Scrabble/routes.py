@@ -2,9 +2,8 @@ from flask import request, url_for, flash, redirect, render_template
 from flask_login import current_user, login_user, logout_user, login_required
 from Scrabble.models import User, Invite, OpenInvite, Game, Board, Chat
 from Scrabble.forms import LoginForm, SignupForm
-from Scrabble.forms import RequestResetPasswordForm, ResetPasswordForm
+from Scrabble.forms import ResetPasswordForm
 from Scrabble.forms import CreateGameForm
-from Scrabble.email_scrab import send_password_reset_email
 from Scrabble import app, db
 from werkzeug.urls import url_parse
 from Scrabble.utils import TileFetcher, isWordValid, isLetter, scoreTransverse, letterValues
@@ -60,7 +59,7 @@ def signup():
         return redirect(url_for('home'))
     form = SignupForm()
     if form.validate_on_submit():
-        user = User(username=form.username.data, email=form.email.data)
+        user = User(username=form.username.data)
         user.set_password(form.password.data)
         db.session.add(user)
         db.session.commit()
@@ -69,29 +68,15 @@ def signup():
         return redirect(url_for('login'))
     return render_template('signup.html', form=form)
 
-@app.route('/request_reset_password', methods=['GET', 'POST'])
-def request_reset_password():
-    if current_user.is_authenticated:
-        return redirect(url_for('home'))
-    form = RequestResetPasswordForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user:
-            send_password_reset_email(user)
-        flash('Check your email for password reset link')
-        return redirect(url_for('login'))
-    return render_template('req_reset_pw.html', form=form)
-
-@app.route('/reset_password/<token>', methods=['GET', 'POST'])
-def reset_password(token):
-    if current_user.is_authenticated:
-        return redirect(url_for('home'))
-    user = User.verify_reset_password_token(token)
-    if not user:
-        return redirect(url_for('index'))
+@app.route('/reset_password', methods=['GET', 'POST'])
+@login_required
+def reset_password():
     form = ResetPasswordForm()
     if form.validate_on_submit():
-        user.set_password(form.password.data)
+        if not current_user.check_password(form.oldpassword.data):
+            flash('Old Password is incorrect, password unchanged')
+            return redirect(url_for('main.reset_password'))
+        current_user.set_password(form.password.data)
         db.session.commit()
         flash('Your password has been reset!')
         return redirect(url_for('login'))

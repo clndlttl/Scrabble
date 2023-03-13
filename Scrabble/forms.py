@@ -10,7 +10,6 @@ class LoginForm(FlaskForm):
 
 class SignupForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(max=64)])
-    email = StringField('Email', validators=[DataRequired(), Email(), Length(max=64)])
     password = PasswordField('Password', validators=[DataRequired(), Length(max=64)])
     password2 = PasswordField(
         'Repeat Password', validators=[DataRequired(), EqualTo('password')])
@@ -24,16 +23,6 @@ class SignupForm(FlaskForm):
             raise ValidationError('Username must consist of letters only')
         if len(username.data) > 8:
             raise ValidationError('Username must be 8 chars or fewer')
-
-
-    def validate_email(self, email):
-        user = User.query.filter_by(email=email.data).first()
-        if user is not None:
-            raise ValidationError('Username is already taken')
-
-class RequestResetPasswordForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    submit = SubmitField('Request Password Reset')
 
 class ResetPasswordForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])

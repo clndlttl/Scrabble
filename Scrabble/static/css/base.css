@@ -1,11 +1,11 @@
 body {
-    background-image: url('../images/cognex.png');
+    background-color: black;
     color: lightgrey;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     font-size: medium;
 }
 
-.form {
+.form-container {
     background-color: black;
     padding: 10%;
     position: fixed;
@@ -17,5 +17,9 @@ body {
 
 .form .flash {
     color: yellow;
+}
+
+.form a {
+    color: deepskyblue;
 }
 

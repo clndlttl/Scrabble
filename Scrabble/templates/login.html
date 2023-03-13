@@ -3,7 +3,8 @@
 {% block content %}
 
   <div class="form">
-    <h1 style="color: yellow">Log In</h1>
+
+    <h1>Log In</h1>
     {% include "_get_flash.html" %}
     <form action="" method="post" novalidate>
       {{ form.hidden_tag() }}
@@ -27,11 +28,7 @@
     </form>
     <p>
       Need to create an account?
-      <a style="color: turquoise" href="{{ url_for('signup') }}">Sign up</a>
-    </p>
-    <p>
-      Forgot Your Password?
-      <a style="color: turquoise" href="{{ url_for('request_reset_password') }}">Reset Password</a>
+      <a href="{{ url_for('signup') }}">Sign up</a>
     </p>
   </div>
 

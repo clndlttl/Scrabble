@@ -1,9 +1,12 @@
 <html>
   <head>
-    <title>Cognex Scrabble</title>
+    <title>ESS Scrabble</title>
     <link rel="stylesheet" href="../static/css/base.css">
   </head>
   <body>
-  {% block content %}{% endblock %}
+    <div class="form-container">
+      <img src="{{ url_for('static', filename='images/ess-logo-white_large.png') }}">
+      {% block content %}{% endblock %}
+    </div>
   </body>
 </html>
