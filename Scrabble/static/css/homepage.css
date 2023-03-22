@@ -36,13 +36,13 @@ body {
 
 .link {
     font-size: x-large;
-    color: turquoise;
+    color: yellow;
     padding-top: 25px;
 }
 
 .label {
     font-size: x-large;
-    color: yellow;
+    color: #00a7d4;
 }
 
 .game .urgent {
@@ -151,5 +151,5 @@ body {
 }
 
 .chatbox #_user {
-    color: blue;
+    color: #00a7d4;
 }

@@ -1,5 +1,5 @@
 body {
-    background-color: black;
+    background-color: #00a7d4;
     color: lightgrey;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     font-size: medium;
@@ -7,12 +7,22 @@ body {
 
 .form-container {
     background-color: black;
-    padding: 10%;
+    padding: 5%;
     position: fixed;
     top: 50%;
     left: 50%;
     -webkit-transform: translate(-50%, -50%);
     transform: translate(-50%, -50%);
+    border-radius: 15px;
+}
+
+.flexrow {
+    display: flex;
+    justify-content: center;
+}
+
+.form-container h1 {
+    color: #00a7d4;
 }
 
 .form .flash {
@@ -20,6 +30,6 @@ body {
 }
 
 .form a {
-    color: deepskyblue;
+    color: #00a7d4;
 }
 
