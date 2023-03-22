@@ -24,7 +24,7 @@ WORKDIR /var/www
 COPY Scrabble Scrabble
 COPY wsgi.py entrypoint.sh ./
 
-RUN mkdir -p Scrabble/database
+RUN mkdir -p database
 
 EXPOSE 80
 
