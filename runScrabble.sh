@@ -1,5 +1,5 @@
 
-#docker load -i scrabble-image.tar
+docker load -i scrabble-image.tar
 
 docker rm -f scrabble-cont || true
 
