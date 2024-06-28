@@ -1,3 +1,2 @@
-import sys
-sys.path.insert(0,"/var/www") # needed for apache2 I guess
-from Scrabble import app as application
+from Scrabble import create_app
+app = create_app()

@@ -1,11 +1,14 @@
 FROM ubuntu
 
-RUN apt-get update
+RUN apt update
 
-RUN apt-get install -y python3-pip python3-dev
-RUN apt-get install -y apache2
-RUN apt-get install -y libapache2-mod-wsgi-py3
-RUN apt-get install -y vim
+WORKDIR /var/www
+
+RUN apt install -y vim
+RUN apt install -y nginx
+RUN apt install -y redis-server
+RUN apt install -y supervisor
+RUN apt install -y python3-pip python3-dev
 
 RUN pip install --upgrade pip
 RUN pip install Flask
@@ -13,18 +16,26 @@ RUN pip install Flask-WTF
 RUN pip install flask-migrate
 RUN pip install flask-sqlalchemy
 RUN pip install flask-login
+RUN pip install rq 
+RUN pip install gunicorn 
+RUN pip install websockets 
+RUN pip install email-validator
+RUN pip install flask-mail
+RUN pip install pyjwt
 RUN pip install requests
 
-COPY scrabble.conf /etc/apache2/sites-available/
-RUN a2dissite 000-default
-RUN a2ensite scrabble
+# nginx
+RUN rm /etc/nginx/sites-enabled/default
+COPY deployment/scrabble.conf /etc/nginx/sites-available/
+RUN ln -s /etc/nginx/sites-available/scrabble.conf /etc/nginx/sites-enabled/
+RUN service nginx reload
 
-WORKDIR /var/www
+# supervisor
+COPY deployment/rqworker.conf /etc/supervisor/conf.d/
+COPY deployment/gunicorn.conf /etc/supervisor/conf.d/
 
 COPY Scrabble Scrabble
 COPY wsgi.py entrypoint.sh ./
-
-RUN mkdir -p database
 
 EXPOSE 80
 

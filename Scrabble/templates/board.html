@@ -142,7 +142,7 @@
         document.body.style.cursor = 'wait';
 
         $.ajax({
-            url: "{{ url_for('playWord') }}",
+            url: "{{ url_for('main.playWord') }}",
             type: 'POST',
             processData: false,
             contentType: false,
@@ -165,7 +165,7 @@
         fd.append('word', $('#_word').val());
         
         $.ajax({
-            url: "{{ url_for('swapTiles') }}",
+            url: "{{ url_for('main.swapTiles') }}",
             type: 'POST',
             processData: false,
             contentType: false,
@@ -205,7 +205,7 @@
                     fd.append('board_id', '{{ board.id }}');
                     
                     $.ajax({
-                        url: "{{ url_for('postChat') }}",
+                        url: "{{ url_for('main.postChat') }}",
                         type: 'POST',
                         processData: false,
                         contentType: false,

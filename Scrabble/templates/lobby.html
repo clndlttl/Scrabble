@@ -6,11 +6,11 @@
   <img class="left" src="{{ tiles.get(letter) }}">
 {% endfor %}
 
-<a class="link right" href="{{ url_for('logout') }}">Log out</a>
+<a class="link right" href="{{ url_for('main.logout') }}">Log out</a>
 
 <hr class="clear">
 
-<a class="link" href="{{ url_for('createGame') }}">New Game</a>
+<a class="link" href="{{ url_for('main.createGame') }}">New Game</a>
 
 {% if pending %}
 <p class="label">You're invited to join these games:</p>
@@ -112,7 +112,7 @@
     fd.append('game_id', gameId);
     
     $.ajax({
-      url: "{{ url_for('joinGame') }}",
+      url: "{{ url_for('main.joinGame') }}",
       type: 'POST',
       processData: false,
       contentType: false,
@@ -128,7 +128,7 @@
     fd.append('game_id', gameId);
 
     $.ajax({
-      url: "{{ url_for('deleteGame') }}",
+      url: "{{ url_for('main.deleteGame') }}",
       type: 'POST',
       processData: false,
       contentType: false,

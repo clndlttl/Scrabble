@@ -1,11 +1,11 @@
-from flask import request, url_for, flash, redirect, render_template
+from flask import request, url_for, flash, redirect, render_template, current_app
 from flask_login import current_user, login_user, logout_user, login_required
+from Scrabble import db
+from Scrabble.main import bp
+from Scrabble.main.forms import LoginForm, SignupForm
+from Scrabble.main.forms import ResetPasswordForm
+from Scrabble.main.forms import CreateGameForm
 from Scrabble.models import User, Invite, OpenInvite, Game, Board, Chat
-from Scrabble.forms import LoginForm, SignupForm
-from Scrabble.forms import ResetPasswordForm
-from Scrabble.forms import CreateGameForm
-from Scrabble import app, db
-from werkzeug.urls import url_parse
 from Scrabble.utils import TileFetcher, isWordValid, isLetter, scoreTransverse, letterValues
 import json
 
@@ -18,45 +18,48 @@ def getUsername(id):
 def strlen(s):
     return len(s)
 
-app.jinja_env.globals.update(getUsername=getUsername)
-app.jinja_env.globals.update(strlen=strlen)
+@bp.before_app_request
+def register_jinja_globals():
+    current_app.jinja_env.globals['getUsername'] = getUsername
+    current_app.jinja_env.globals['strlen'] = strlen
 
-@app.route("/")
-@app.route("/index")
+
+@bp.route("/")
+@bp.route("/index")
 def index():
-    return redirect(url_for('home'))
+    return redirect(url_for('main.home'))
 
-@app.route("/home")
+@bp.route("/home")
 @login_required
 def home():
     return render_template('homepage.html')
 
-@app.route("/login", methods=['GET', 'POST'])
+@bp.route("/login", methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        return redirect(url_for('main.home'))
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
         if user is None or not user.check_password(form.password.data):
             flash('Invalid username or password')
-            return redirect(url_for('login'))
+            return redirect(url_for('main.login'))
         login_user(user, remember=False)
         next_page = request.args.get('next')
-        if not next_page or url_parse(next_page).netloc != '':
-            next_page = url_for('home')
+        if not next_page:
+            next_page = url_for('main.home')
         return redirect(next_page)
     return render_template('login.html', form=form)
 
-@app.route("/logout")
+@bp.route("/logout")
 def logout():
     logout_user()
-    return redirect(url_for('index'))
+    return redirect(url_for('main.index'))
 
-@app.route('/signup', methods=['GET', 'POST'])
+@bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        return redirect(url_for('main.home'))
     form = SignupForm()
     if form.validate_on_submit():
         user = User(username=form.username.data)
@@ -65,10 +68,10 @@ def signup():
         db.session.commit()
         
         flash('Sign Up successful!')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     return render_template('signup.html', form=form)
 
-@app.route('/reset_password', methods=['GET', 'POST'])
+@bp.route('/reset_password', methods=['GET', 'POST'])
 @login_required
 def reset_password():
     form = ResetPasswordForm()
@@ -79,10 +82,10 @@ def reset_password():
         current_user.set_password(form.password.data)
         db.session.commit()
         flash('Your password has been reset!')
-        return redirect(url_for('login'))
+        return redirect(url_for('main.login'))
     return render_template('reset_pw.html', form=form)
 
-@app.route('/createGame', methods=['GET', 'POST'])
+@bp.route('/createGame', methods=['GET', 'POST'])
 @login_required
 def createGame():
     form = CreateGameForm()
@@ -132,10 +135,10 @@ def createGame():
 
         db.session.commit()
 
-        return redirect(url_for('home'))
+        return redirect(url_for('main.home'))
     return render_template('createGame.html', form=form)
 
-@app.route('/showLobby')
+@bp.route('/showLobby')
 @login_required
 def showLobby():
     personal_invites = Invite.query.filter_by(user_id=current_user.id)
@@ -164,7 +167,7 @@ def showLobby():
     return render_template('lobby.html', pending=pending, accepted=accepted, tiles=tileFetcher)
 
 
-@app.route('/joinGame', methods=['POST'])
+@bp.route('/joinGame', methods=['POST'])
 @login_required
 def joinGame():
     id = request.values.get('game_id')
@@ -172,7 +175,7 @@ def joinGame():
     game = Game.query.filter_by(id=id).first()
     if game.hasBegun:
         flash('Game has already begun')
-        return redirect(url_for('showLobby'))
+        return redirect(url_for('main.showLobby'))
 
     invite = Invite.query.filter_by(user_id=current_user.id).filter_by(game_id=id).first()
     if invite is not None:
@@ -198,9 +201,9 @@ def joinGame():
         game.hasBegun = True    
 
     db.session.commit()
-    return redirect(url_for('showLobby'))
+    return redirect(url_for('main.showLobby'))
 
-@app.route('/deleteGame', methods=['POST'])
+@bp.route('/deleteGame', methods=['POST'])
 @login_required
 def deleteGame():
     id = request.values.get('game_id')
@@ -214,10 +217,10 @@ def deleteGame():
     Game.query.filter_by(id=id).delete()
 
     db.session.commit()
-    return redirect(url_for('showLobby'))
+    return redirect(url_for('main.showLobby'))
 
 
-@app.route('/showBoard')
+@bp.route('/showBoard')
 @login_required
 def showBoard():
     id = request.values.get('id')
@@ -229,7 +232,7 @@ def showBoard():
 
     return render_template('board.html', board=board, tiles=tileFetcher, bank=bank)
 
-@app.route('/playWord', methods=['POST'])
+@bp.route('/playWord', methods=['POST'])
 @login_required
 def playWord():
     board_id = request.values.get('board_id')
@@ -407,7 +410,7 @@ def playWord():
     # return json to the client
     return json.dumps(rv)
 
-@app.route('/swapTiles', methods=['POST'])
+@bp.route('/swapTiles', methods=['POST'])
 @login_required
 def swapTiles():
     board_id = request.values.get('board_id')
@@ -453,7 +456,7 @@ def swapTiles():
 
     return json.dumps(rv)
 
-@app.route('/postChat', methods=['POST'])
+@bp.route('/postChat', methods=['POST'])
 @login_required
 def postChat():
     user = request.values.get('user')
