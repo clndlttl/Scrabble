@@ -1,13 +1,13 @@
 <html>
   <head>
-    <title>ESS Scrabble</title>
+    <title>Scrabble</title>
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}?v={{ css_hash }}">
   </head>
   <body>
     <div class="form-container">
       <div class="flexrow">
-          <img src="{{ url_for('static', filename='images/ess-logo-white_large.png') }}">
+          <img id="logo" src="{{ url_for('static', filename='images/IF-logo-bg-color-500.png') }}">
       </div>
       {% block content %}{% endblock %}
     </div>

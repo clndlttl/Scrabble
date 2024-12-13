@@ -1,4 +1,4 @@
-<table class="board">
+<table class="board softbox whitebg">
     {% for row in range(1,16) %}
     <tr>
         {% for col in range(1,16) %}
@@ -13,39 +13,22 @@
     {% endfor %}
 </table>
 
-<div class="controls">
+<div class="controls softbox whitebg">
 <table class="scores">
     <tr>
         {% if board.game.whosUp == board.game.player1 %}
-        <td class="yourturn">
-        {% else %}
         <td>
-        {% endif %}
-            <p>{{ getUsername(board.game.player1) }}</p>
+            <p class="yourturn">{{ getUsername(board.game.player1) }}</p>
         </td>
-        {% if board.game.whosUp == board.game.player2 %}
-        <td class="yourturn">
-        {% else %}
         <td>
-        {% endif %}
             <p>{{ getUsername(board.game.player2) }}</p>
         </td>
-        {% if board.game.player3 %}
-        {% if board.game.whosUp == board.game.player3 %}
-        <td class="yourturn">
         {% else %}
         <td>
-        {% endif %}
-            <p>{{ getUsername(board.game.player3) }}</p>
+            <p>{{ getUsername(board.game.player1) }}</p>
         </td>
-        {% endif %}
-        {% if board.game.player4 %}
-        {% if board.game.whosUp == board.game.player4 %}
-        <td class="yourturn">
-        {% else %}
         <td>
-        {% endif %}
-            <p>{{ getUsername(board.game.player4) }}</p>
+            <p class="yourturn">{{ getUsername(board.game.player2) }}</p>
         </td>
         {% endif %}
     </tr>
@@ -56,16 +39,6 @@
         <td>
             <p>{{ board.game.score2 }}</p>
         </td>
-        {% if board.game.player3 %}
-        <td>
-            <p>{{ board.game.score3 }}</p>
-        </td>
-        {% endif %}
-        {% if board.game.player4 %}
-        <td>
-            <p>{{ board.game.score4 }}</p>
-        </td>
-        {% endif %}
     </tr>
 </table>
 
@@ -185,12 +158,13 @@
 
 </div>
 
-<div class="chatbox">
+<div class="chatbox softbox whitebg">
+    <p class="title">Chat</p>
     <input type="text" id="_inputtext" size="64">
     <div id="_history">
         <div class="wrapper">
         {% for chat in board.chats|reverse %}
-        <p><span id="_user">{{ chat.user }}: </span><span id="_text">{{ chat.text }}</span></p>
+        <p><span id="_user" class="turq">{{ chat.user }}: </span><span id="_text">{{ chat.text }}</span></p>
         {% endfor %}
         </div>
     </div>

@@ -1,6 +1,35 @@
 body {
-    background-color: deepskyblue;
+    background-color: #5ce1e6;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.flexrow {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.softbox {
+    border: 1px solid black;
+    border-radius: 10px;
+}
+
+.whitebg {
+    background-color: whitesmoke;
+}
+
+.icon {
+    max-width: 30px;
+    cursor: pointer;
+}
+
+.yellow {
+    color: #ffde59;
+}
+
+.turq {
+    color: #5ce1e6;
 }
 
 .left {
@@ -15,14 +44,26 @@ body {
     clear: both;
 }
 
+input {
+    padding: 8px;
+    min-width: 200;
+}
+
+button {
+    padding: 8px;
+    min-width: 80px;
+}
+
 .flash {
     font-family: 'Times New Roman', Times, serif;
     font-size: x-large;
-    color: blue;
+    color: #5ce1e6;
 }
 
 .maincolumn {
     background-color: black;
+    border: 1px solid black;
+    border-radius: 10px;
     padding: 20px;
     width: 50%;
     margin-left: auto;
@@ -31,18 +72,17 @@ body {
 
 .title {
     font-size: xx-large;
-    color: white;
 }
 
 .link {
     font-size: x-large;
-    color: yellow;
+    color: #ffde59;
     padding-top: 25px;
 }
 
 .label {
     font-size: x-large;
-    color: #00a7d4;
+    color: black;
 }
 
 .game .urgent {
@@ -83,21 +123,19 @@ body {
     width: 50%;
 }
 
-.game_spacer {
+.spacer {
     margin-bottom: 50px;
 }
 
 /*************************************************/
 
 .board {
-    background-color: white;
     float: left;
     margin-top: 20px;
     margin-left: 20px;
 }
 
 .controls {
-    background-color: white;
     position: fixed;
     right: 0;
     top: 0;
@@ -117,12 +155,17 @@ body {
 }
 
 .scores .yourturn {
-    border: 1px solid;
-    background-color: yellow;
+    border: 2px solid black;
+    border-radius: 5px;
+    margin: 0; /* Removes extra spacing */
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background-color: #ffde59;
 }
 
 .scores p {
     font-size: x-large;
+
 }
 
 .bank {
@@ -130,7 +173,6 @@ body {
 }
 
 .chatbox {
-    background-color: white;
     padding: 20px;
     font-size: large;
     position: fixed;
@@ -148,8 +190,4 @@ body {
 
 .chatbox #_inputtext {
     margin-bottom: 10px;
-}
-
-.chatbox #_user {
-    color: #00a7d4;
 }

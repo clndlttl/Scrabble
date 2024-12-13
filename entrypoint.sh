@@ -1,8 +1,5 @@
 cd /var/www
 
-# start redis
-service redis-server start
-
 # start nginx and supervisor (gunicorn, rq workers) 
 service nginx start
 service supervisor start

@@ -3,11 +3,16 @@ from flask_login import current_user, login_user, logout_user, login_required
 from Scrabble import db
 from Scrabble.main import bp
 from Scrabble.main.forms import LoginForm, SignupForm
-from Scrabble.main.forms import ResetPasswordForm
 from Scrabble.main.forms import CreateGameForm
-from Scrabble.models import User, Invite, OpenInvite, Game, Board, Chat
+from Scrabble.models import User, Invite, Game, Board, Chat
 from Scrabble.utils import TileFetcher, isWordValid, isLetter, scoreTransverse, letterValues
 import json
+import hashlib
+import os
+
+def generate_cache_buster(file_path):
+    with open(file_path, 'rb') as f:
+        return hashlib.md5(f.read()).hexdigest()
 
 def getUsername(id):
     user = User.query.filter_by(id=id).first()
@@ -23,7 +28,6 @@ def register_jinja_globals():
     current_app.jinja_env.globals['getUsername'] = getUsername
     current_app.jinja_env.globals['strlen'] = strlen
 
-
 @bp.route("/")
 @bp.route("/index")
 def index():
@@ -32,7 +36,9 @@ def index():
 @bp.route("/home")
 @login_required
 def home():
-    return render_template('homepage.html')
+    css_file_path = os.path.join(current_app.config['CSS_DIR'], 'homepage.css')
+    css_hash = generate_cache_buster(css_file_path)
+    return render_template('homepage.html', css_hash=css_hash)
 
 @bp.route("/login", methods=['GET', 'POST'])
 def login():
@@ -49,7 +55,9 @@ def login():
         if not next_page:
             next_page = url_for('main.home')
         return redirect(next_page)
-    return render_template('login.html', form=form)
+    css_file_path = os.path.join(current_app.config['CSS_DIR'], 'base.css')
+    css_hash = generate_cache_buster(css_file_path)
+    return render_template('login.html', form=form, css_hash=css_hash)
 
 @bp.route("/logout")
 def logout():
@@ -69,29 +77,19 @@ def signup():
         
         flash('Sign Up successful!')
         return redirect(url_for('main.login'))
-    return render_template('signup.html', form=form)
-
-@bp.route('/reset_password', methods=['GET', 'POST'])
-@login_required
-def reset_password():
-    form = ResetPasswordForm()
-    if form.validate_on_submit():
-        if not current_user.check_password(form.oldpassword.data):
-            flash('Old Password is incorrect, password unchanged')
-            return redirect(url_for('main.reset_password'))
-        current_user.set_password(form.password.data)
-        db.session.commit()
-        flash('Your password has been reset!')
-        return redirect(url_for('main.login'))
-    return render_template('reset_pw.html', form=form)
+    css_file_path = os.path.join(current_app.config['CSS_DIR'], 'base.css')
+    css_hash = generate_cache_buster(css_file_path)
+    return render_template('signup.html', form=form, css_hash=css_hash)
 
 @bp.route('/createGame', methods=['GET', 'POST'])
 @login_required
 def createGame():
     form = CreateGameForm()
-    form.populate_users(current_user.id)
     if form.validate_on_submit():
-        game = Game(name=form.name.data, player1=current_user.id, whosUp=current_user.id)
+
+        user2 = User.query.filter_by(username=form.opponent.data).first()
+
+        game = Game(name=form.name.data, player1=current_user.id, player2=user2.id, whosUp=current_user.id)
         game.initPool()
         db.session.add(game)
 
@@ -109,40 +107,22 @@ def createGame():
         invite1 = Invite(user_id=player1, game_id=found_game.id, accepted=True)
         db.session.add(invite1)
 
-        # check if an OpenInvite record should be created
-        open_spots = 0
-        if int(form.select1.data) == -1:
-            open_spots += 1
-        elif int(form.select1.data) > 0:
-            invite2 = Invite(user_id=form.select1.data, game_id=found_game.id)
-            db.session.add(invite2)
-
-        if int(form.select2.data) == -1:
-            open_spots += 1
-        elif int(form.select2.data) > 0:
-            invite3 = Invite(user_id=form.select2.data, game_id=found_game.id)
-            db.session.add(invite3)
-
-        if int(form.select3.data) == -1:
-            open_spots += 1
-        elif int(form.select3.data) > 0:
-            invite4 = Invite(user_id=form.select3.data, game_id=found_game.id)
-            db.session.add(invite4)
-            
-        if open_spots > 0:
-            open = OpenInvite(game_id=found_game.id, spots=open_spots)
-            db.session.add(open)
+        player2 = user2.id
+        invite2 = Invite(user_id=player2, game_id=found_game.id, accepted=False)
+        db.session.add(invite2)
 
         db.session.commit()
 
         return redirect(url_for('main.home'))
-    return render_template('createGame.html', form=form)
+
+    css_file_path = os.path.join(current_app.config['CSS_DIR'], 'base.css')
+    css_hash = generate_cache_buster(css_file_path)
+    return render_template('createGame.html', form=form, css_hash=css_hash)
 
 @bp.route('/showLobby')
 @login_required
 def showLobby():
     personal_invites = Invite.query.filter_by(user_id=current_user.id)
-    open_invites = OpenInvite.query.filter(OpenInvite.spots > 0)
 
     accepted = []
     accepted_game_ids = []
@@ -154,13 +134,9 @@ def showLobby():
         if i.accepted:
             accepted.append(i.game)
             accepted_game_ids.append(i.game.id)
-        elif not i.game.hasBegun:
+        else:
             pending.append(i.game)
             pending_game_ids.append(i.game.id)
-    
-    for i in open_invites:
-        if not i.game.hasBegun and i.game.id not in accepted_game_ids and i.game.id not in pending_game_ids:
-            pending.append(i.game)
     
     tileFetcher = TileFetcher()
 
@@ -173,32 +149,13 @@ def joinGame():
     id = request.values.get('game_id')
 
     game = Game.query.filter_by(id=id).first()
-    if game.hasBegun:
-        flash('Game has already begun')
-        return redirect(url_for('main.showLobby'))
 
     invite = Invite.query.filter_by(user_id=current_user.id).filter_by(game_id=id).first()
     if invite is not None:
         invite.accepted = True
-    else:
-        openInvite = OpenInvite.query.filter_by(game_id=id).first()
-        if openInvite is not None:
-            openInvite.spots -= 1
-            newInvite = Invite(user_id=current_user.id, game_id=game.id, accepted=True)
-            db.session.add(newInvite)
 
-    if game.player2 is None:
-        game.player2 = current_user.id
-        game.refillBank(2)
-    elif game.player3 is None:
-        game.player3 = current_user.id
-        game.refillBank(3)
-    elif game.player4 is None:
-        game.player4 = current_user.id
-        game.refillBank(4)
-
-    if game.player4 is not None:
-        game.hasBegun = True    
+    game.player2 = current_user.id
+    game.refillBank(2)
 
     db.session.commit()
     return redirect(url_for('main.showLobby'))
@@ -213,7 +170,6 @@ def deleteGame():
 
     Board.query.filter_by(game_id=id).delete()
     Invite.query.filter_by(game_id=id).delete()
-    OpenInvite.query.filter_by(game_id=id).delete()
     Game.query.filter_by(id=id).delete()
 
     db.session.commit()
@@ -396,7 +352,7 @@ def playWord():
     board.game.setPlayerStuff(current_user.id, ''.join(bankCopy), playerScore + score)
 
     # advance turn
-    board.game.advanceTurn(playerIdx)
+    board.game.advanceTurn()
 
     # check for game end
     board.game.checkForWinner()
@@ -448,7 +404,7 @@ def swapTiles():
     board.game.returnToPool(''.join(removed))
 
     # advance turn
-    board.game.advanceTurn(idx)
+    board.game.advanceTurn()
 
     db.session.commit()
 

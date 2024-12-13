@@ -3,7 +3,7 @@
 {% block content %}
 
 <div class="form">
-<h1>Create Game</h1>
+<h1 class="yellow">Create Game</h1>
 
 <form action="" method="post">
 
@@ -18,25 +18,9 @@
   </p>
 
   <p>
-    {{ form.select1.label }}<br>
-    {{ form.select1 }}<br>
-    {% for error in form.select1.errors %}
-      <span style="color: red;">[{{ error }}]</span>
-    {% endfor %}  
-  </p>
-
-  <p>
-    {{ form.select2.label }}<br>
-    {{ form.select2 }}<br>
-    {% for error in form.select2.errors %}
-      <span style="color: red;">[{{ error }}]</span>
-    {% endfor %}  
-  </p>
-
-  <p>
-    {{ form.select3.label }}<br>
-    {{ form.select3 }}<br>
-    {% for error in form.select3.errors %}
+    {{ form.opponent.label }}<br>
+    {{ form.opponent(size=64) }}<br>
+    {% for error in form.opponent.errors %}
       <span style="color: red;">[{{ error }}]</span>
     {% endfor %}  
   </p>

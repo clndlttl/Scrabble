@@ -1,5 +1,5 @@
 body {
-    background-color: #00a7d4;
+    background-color: #5ce1e6;
     color: lightgrey;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     font-size: medium;
@@ -21,15 +21,20 @@ body {
     justify-content: center;
 }
 
-.form-container h1 {
-    color: #00a7d4;
+#logo {
+    width: 200px;
+    height: 200px;
 }
 
-.form .flash {
-    color: yellow;
+.yellow {
+    color: #ffde59
 }
 
-.form a {
-    color: #00a7d4;
+.turq {
+    color: #5ce1e6
+}
+
+input {
+    padding: 8px;
 }
 

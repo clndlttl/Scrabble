@@ -4,7 +4,7 @@
 
   <div class="form">
 
-    <h1>Log In</h1>
+    <h1 class="yellow">Log In</h1>
     {% include "_get_flash.html" %}
     <form action="" method="post" novalidate>
       {{ form.hidden_tag() }}
@@ -28,7 +28,7 @@
     </form>
     <p>
       Need to create an account?
-      <a href="{{ url_for('main.signup') }}">Sign up</a>
+      <a class="yellow" href="{{ url_for('main.signup') }}">Sign up</a>
     </p>
   </div>
 

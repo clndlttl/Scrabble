@@ -1,4 +1,3 @@
-from flask import current_app
 from Scrabble import db, login
 from datetime import datetime
 from werkzeug.security import generate_password_hash
@@ -33,66 +32,37 @@ class Invite(db.Model):
     game_id = db.Column(db.Integer, db.ForeignKey('game.id'))
     accepted = db.Column(db.Boolean, default=False)
 
-class OpenInvite(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    game_id = db.Column(db.Integer, db.ForeignKey('game.id'))
-    spots = db.Column(db.Integer, default=0)
-
 class Game(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
-    hasBegun = db.Column(db.Boolean, default=False)
     isComplete = db.Column(db.Boolean, default=False)
     player1 = db.Column(db.Integer)
     player2 = db.Column(db.Integer)
-    player3 = db.Column(db.Integer)
-    player4 = db.Column(db.Integer)
     score1 = db.Column(db.Integer, default=0)
     score2 = db.Column(db.Integer, default=0)
-    score3 = db.Column(db.Integer, default=0)
-    score4 = db.Column(db.Integer, default=0)
     bank1 = db.Column(db.String(7), default='')
     bank2 = db.Column(db.String(7), default='')
-    bank3 = db.Column(db.String(7), default='')
-    bank4 = db.Column(db.String(7), default='')
     pool = db.Column(db.String(100))
     turn = db.Column(db.Integer, default=0)
     whosUp = db.Column(db.Integer)
     winner = db.Column(db.Integer)
     invites = db.relationship('Invite', backref='game', lazy='dynamic')
-    open_invites = db.relationship('OpenInvite', backref='game', lazy='dynamic')
     board = db.relationship('Board', backref='game', lazy='dynamic')
 
-    def advanceTurn(self, idx):
-        self.hasBegun = True
+    def advanceTurn(self):
         self.turn += 1
-        next_idx = idx+1
-        if next_idx == 5:
-            self.whosUp = self.player1
-        elif next_idx == 4:
-            if self.player4:
-                self.whosUp = self.player4
-            else:
-                self.whosUp = self.player1
-        elif next_idx == 3:
-            if self.player3:
-                self.whosUp = self.player3
-            else:
-                self.whosUp = self.player1
-        elif next_idx == 2:
+        if self.turn % 2:
             self.whosUp = self.player2
-    
+        else:
+            self.whosUp = self.player1
+
     def checkForWinner(self):
         idx, bank, score = self.getPlayerStuff(self.whosUp)
         if len(bank) == 0 and len(self.pool) == 0:
             self.isComplete = True
             rank = {self.player1 : self.score1,
                     self.player2 : self.score2}
-            if self.player3:
-                rank[self.player3] = self.score3
-            if self.player4:
-                rank[self.player4] = self.score4
             self.winner = max(rank, key=rank.get)
 
     def getPlayerStuff(self, user_id):
@@ -100,12 +70,6 @@ class Game(db.Model):
             return (1, self.bank1, self.score1) 
         elif user_id == self.player2:
             return (2, self.bank2, self.score2) 
-        elif user_id == self.player3:
-            return (3, self.bank3, self.score3) 
-        elif user_id == self.player4:
-            return (4, self.bank4, self.score4)
-        else:
-            return (-1, '', 0)
     
     def setPlayerStuff(self, user_id, bank, newScore):
         if user_id == self.player1:
@@ -116,14 +80,6 @@ class Game(db.Model):
             self.bank2 = bank
             self.score2 = newScore 
             self.refillBank(2)
-        elif user_id == self.player3:
-            self.bank3 = bank
-            self.score3 = newScore 
-            self.refillBank(3)
-        elif user_id == self.player4:
-            self.bank4 = bank
-            self.score4 = newScore 
-            self.refillBank(4)
 
     def initPool(self):
         self.pool = 'aaaaaaaaabbccddddeeeeeeeeeeeeffggghhiiiiiiiiijjkkllllmmnnnnnnooooooooppqrrrrrrssssttttttuuuuvvwwxyyz'
@@ -146,7 +102,7 @@ class Game(db.Model):
         self.pool += s
 
     def numTilesPlayed(self):
-        return 100 - len(self.pool) - len(self.bank1) - len(self.bank2) - len(self.bank3) - len(self.bank4)
+        return 100 - len(self.pool) - len(self.bank1) - len(self.bank2)
 
     def printElapsedTime(self):
         elapsed = datetime.utcnow() - self.timestamp

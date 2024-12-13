@@ -89,7 +89,7 @@ class TileFetcher:
                       'x': url_for('static', filename='tiles/x.jpg'),
                       'y': url_for('static', filename='tiles/y.jpg'),
                       'z': url_for('static', filename='tiles/z.jpg'),
-                      '*': url_for('static', filename='tiles/ess.jpg'),
+                      '*': url_for('static', filename='tiles/free.jpg'),
                       '.': url_for('static', filename='tiles/em.jpg'),
                       '#': url_for('static', filename='tiles/dl.jpg'),
                       '%': url_for('static', filename='tiles/dw.jpg'),
