@@ -1,29 +1,39 @@
-<div class="maincolumn">
+<div class="headbar softbox blackbg">
 
-  <div class="flexrow softbox whitebg">
+    <img class="logo" src="{{ url_for('static', filename='images/Inertial-Frame-Logo.png') }}">
+    
+    <div class="pair rjust">
+      <div class="boardtable softbox whitebg">
+        {% for letter in current_user.username %}
+          <img class="left" src="{{ tiles.getURL(letter) }}">
+        {% endfor %}
+      </div> 
+ 
+      <div class="softbox yellowbg pad20">
+        <a href="{{ url_for('main.logout') }}"><i class="icon black fa-solid fa-arrow-right-from-bracket fa-2x"></i></a>
+      </div>
+    </div>
 
-    <div class>
-      {% for letter in current_user.username %}
-      <img class="left" src="{{ tiles.getURL(letter) }}">
-      {% endfor %}
-    </div> 
- 
-    <a href="{{ url_for('main.createGame') }}"><i class="icon turq fa-regular fa-square-plus fa-2x"></i></a>
- 
-    <a href="{{ url_for('main.logout') }}"><i class="icon turq fa-solid fa-arrow-right-from-bracket fa-2x"></i></a>
- 
-  </div>
+</div>
+
+<div class="maincolumn softbox turqbg">
 
   <div class="spacer"></div>
 
-  <div class="softbox whitebg">
-    {% if pending %}
-    <p class="label">You're invited to join these games:</p>
-    {% endif %}
+  <div class="addbtn softbox blackbg">
+    <a href="{{ url_for('main.createGame') }}"><i class="icon yellow fa-regular fa-square-plus fa-2x"></i></a>
+  </div>
+
+  <div class="spacer"></div>
+  
+  {% if pending %}
+  <div class="gamebox softbox whitebg">
+    <p class="title black">You're invited to join:</p>
 
     {% for game in pending %}
-    <div class="invite">
-      <p class="players"><b>Opponent: </b>
+    <div class="game softbox smokebg">
+
+      <p class="label"><b>Vs: </b>
         {% if game.player1 == current_user.id %}
         {{ getUsername( game.player2 ) }}
         {% else %}
@@ -31,29 +41,26 @@
         {% endif %}
       </p>   
 
-      <div class="flexrow">
-        <p class="gamename"><i>"{{ game.name }}"</i></p>
-        <p>created {{ game.printElapsedTime() }}</p>
-        <button class="joinbtn" onclick="joinGame('{{ game.id }}')">Join</button>
-      </div>
+      <p class="label">Created {{ game.printElapsedTime() }}</p>
+      <button class="btn1" onclick="joinGame('{{ game.id }}')">Join</button>
+      <button class="btn1" onclick="deleteGame('{{ game.id }}')">Deny</button>
     </div>
 
     <div class="spacer"></div>
 
     {% endfor %}
   </div>
+  {% endif %}
 
-  <div class="spacer"></div>
 
-  <div class="softbox whitebg">
-    {% if accepted %}
-    <p class="label">Your active games:</p>
-    {% endif %}
+  {% if accepted %}
+  <div class="gamebox softbox whitebg">
+    <p class="title black">Active Games:</p>
 
     {% for game in accepted %}
 
-    <div class="game" onclick="showBoard('{{ game.id }}')">
-      <p class="players"><b>Opponent: </b>
+    <div class="game activegame softbox smokebg" onclick="showBoard('{{ game.id }}')">
+      <p class="label"><b>Vs: </b>
         {% if game.player1 == current_user.id %}
         {{ getUsername( game.player2 ) }}
         {% else %}
@@ -61,27 +68,21 @@
         {% endif %}
       </p>
 
-      <div class="flexrow">
-        <p class="gamename"><i>"{{ game.name }}"</i></p>
-      
-        <p>created {{ game.printElapsedTime() }}</p>
+      <p class="label">created {{ game.printElapsedTime() }}</p>
         
-        {% if game.winner == current_user.id %}
-        <p class="urgent">You have won!</p>
-        {% elif game.winner %}
-        <p>{{ getUsername(game.winner) }} has won</p>
-        {% elif game.whosUp == current_user.id %}
-        <p class="urgent">Your turn!</p>
-        {% else %}
-        <p>{{ getUsername( game.whosUp ) }}'s turn</p>
-        {% endif %}
-      
-        <p>{{ strlen( game.pool ) }} letters left</p>
-      </div>
-
-      {% if game.isComplete and game.winner == current_user.id %}
-      <button class="deleteGameBtn" onclick="deleteGame('{{ game.id }}')">Delete Game</button>
+      {% if game.winner == current_user.id %}
+      <p class="label urgent">You have won!</p>
+      {% elif game.winner %}
+      <p class="label">{{ getUsername(game.winner) }} has won!</p>
+      {% elif game.whosUp == current_user.id %}
+      <p class="label urgent">Your turn!</p>
+      {% else %}
+      <p class="label">{{ getUsername( game.whosUp ) }}'s turn</p>
       {% endif %}
+      
+      <p class="label">{{ strlen( game.pool ) }} letters left</p>
+
+      <button class="btn1" onclick="deleteGame('{{ game.id }}')">Quit</button>
 
     </div>
 
@@ -89,6 +90,7 @@
 
     {% endfor %}
   </div>
+  {% endif %}
 
   {% include "_get_flash.html" %}
 </div> 

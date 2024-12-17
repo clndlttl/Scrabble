@@ -324,7 +324,7 @@ def playWord():
 
     # Validate and score all words
     score = 0
-    thisScore = scoreWords(words, rv)
+    thisScore, scoredWordDict = scoreWords(words, rv)
     if thisScore == 0:
         return json.dumps(rv)
     else:
@@ -354,9 +354,10 @@ def playWord():
 
     db.session.commit()
 
-    flash('You scored {} points!'.format(score))
+    for w in scoredWordDict:
+        flash(f'You played "{w}" for {scoredWordDict[w]} points!')
     if board.game.winner is not None:
-        flash('{} has won the game!'.format(getUsername(board.game.winner)))
+        flash(f'{getUsername(board.game.winner)} has won the game!')
 
     # return json to the client
     return json.dumps(rv)

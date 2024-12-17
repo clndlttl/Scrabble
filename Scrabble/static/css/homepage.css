@@ -23,8 +23,16 @@ body {
     background-color: white;
 }
 
+.smokebg {
+    background-color: whitesmoke;
+}
+
 .lgreybg {
     background-color: lightgray;
+}
+
+.black {
+    color: black;
 }
 
 .blackbg {
@@ -48,16 +56,8 @@ body {
     color: #5ce1e6;
 }
 
-.left {
-    float: left;
-}
-
-.right {
-    float: right;
-}
-
-.clear {
-    clear: both;
+.turqbg {
+    background-color: #5ce1e6;
 }
 
 input {
@@ -76,24 +76,10 @@ button {
     color: #5ce1e6;
 }
 
-.maincolumn {
-    background-color: black;
-    border: 1px solid black;
-    border-radius: 10px;
-    padding: 20px;
-    width: 50%;
-    margin-left: auto;
-    margin-right: auto;
-}
+
 
 .title {
     font-size: xx-large;
-}
-
-.link {
-    font-size: x-large;
-    color: #ffde59;
-    padding-top: 25px;
 }
 
 .label {
@@ -101,23 +87,94 @@ button {
     color: black;
 }
 
+.pair {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.rjust {
+    justify-content: right;
+}
+
+.btn1 {
+    width: 80px;
+    height: 50px;
+    font-size: large;
+    background-color: white;
+    cursor: pointer;
+}
+
+.boardtable {
+    padding: 5px;
+}
+
+
+
+
+.headbar {
+    margin-top: 20px;
+    margin-left: 20px;
+    margin-right: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+}
+
+.headbar .logo {
+    width: 8%;
+    border: 2px solid white;
+    border-radius: 8px;
+}
+
+.maincolumn {
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    width: 70%;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 30px;
+    align-items: center;
+}
+
+.spacer {
+    margin-bottom: 50px;
+}
+
+.addbtn {
+    padding: 20px;
+
+}
+
+.pad20 {
+    padding: 20px;
+}
+
+.gamebox {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+.game {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    width: 90%;
+}
+
 .game .urgent {
     font-size: x-large;
     color: red;
 }
 
-.invite, .game {
-    background-color: white;
-    padding: 10px;
-}
 
-.invite .players, .game .players {
-    text-align: center;
-    margin: auto;
-    padding-top: 20px;
-}
-
-.game {
+.activegame {
     cursor: pointer;
 }
 
@@ -135,15 +192,8 @@ button {
     width: 25%;
 }
 
-.joinbtn {
-    width: 50%;
-}
 
-.spacer {
-    margin-bottom: 50px;
-}
 
-/*************************************************/
 
 .board {
     display: flex;
@@ -151,10 +201,6 @@ button {
     align-items: center;
     padding-top: 10%;
     padding-bottom: 15%;
-}
-
-.boardtable {
-    padding: 2;
 }
 
 .score {
@@ -229,23 +275,6 @@ button {
     min-width: 60px;
 }
 
-.pair {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-}
-
-.rjust {
-    justify-content: right;
-}
-
-.btn1 {
-    width: 80px;
-    height: 50px;
-    font-size: large;
-    background-color: white;
-}
-
 
 .chatbox {
     padding: 20px;
@@ -266,4 +295,3 @@ button {
 .chatbox #_inputtext {
     margin-bottom: 10px;
 }
-

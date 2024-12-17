@@ -58,9 +58,11 @@ def scoreWords(words, rv):
     }
     '''
     current_app.logger.debug('words = %s',words)
-    score = 0
+    finalScore = 0
 
     seenHashes = set()
+
+    scoredWords = {}
 
     for hash in words:
 
@@ -72,6 +74,7 @@ def scoreWords(words, rv):
 
         w = ''
         wordBonus = 1
+        thisScore = 0
 
         for tup in words[hash]:
 
@@ -81,24 +84,28 @@ def scoreWords(words, rv):
             w += letter
 
             if space is None or space == '.':
-                score += letterValues[letter]
+                thisScore += letterValues[letter]
             elif space == '#':
-                score += letterValues[letter] * 2
+                thisScore += letterValues[letter] * 2
             elif space == '@':
-                score += letterValues[letter] * 3
+                thisScore += letterValues[letter] * 3
             elif space == '%':
-                score += letterValues[letter]
+                thisScore += letterValues[letter]
                 wordBonus *= 2
             elif space == '$':
-                score += letterValues[letter]
+                thisScore += letterValues[letter]
                 wordBonus *= 3
 
         if not isWordValid(w):
-            score = 0
-            rv['ERROR'].append(f'{w} is not a valid word.')
+            finalScore = 0
+            rv['ERROR'].append(f'"{w}" is not a valid word.')
+            scoredWords.clear()
             break
+        else:
+            finalScore += thisScore * wordBonus
+            scoredWords[w] = thisScore * wordBonus
 
-    return score * wordBonus
+    return finalScore, scoredWords
 
 
 class TileFetcher:

@@ -11,7 +11,7 @@ body {
     height: 100%;
 }
 
-.img-form-container img {
+.img-form-container .coverimg {
     width: 50%;
 }
 
@@ -35,7 +35,7 @@ body {
 .logo {
     width: 200px;
     height: 200px;
-    border: 2pm solid white;
+    border: 2px solid white;
     border-radius: 8px;
 }
 
@@ -48,14 +48,21 @@ body {
 }
 
 input {
-    padding: 3%;
+    padding: 2%;
+    font-size: large;
+}
+
+#random {
+    width: 20px;
+    height: 20px;
+    padding-left: 20px;
 }
 
 #submit {
     width: 50%;
     height: 15%;
     margin-top: 3%;
-    background-color: lightgrey;
+    background-color: whitesmoke;
     font-size: large;
     cursor: pointer;
 }

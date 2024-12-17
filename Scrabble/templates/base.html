@@ -6,7 +6,7 @@
   </head>
   <body>
     <div class="img-form-container">
-      <img src="{{ url_for('static', filename='images/scrabble.jpg') }}">
+      <img class="coverimg" src="{{ url_for('static', filename='images/scrabble.jpg') }}">
       <div class="form-container">
         <img class="logo" src="{{ url_for('static', filename='images/Inertial-Frame-Logo.png') }}">
         {% block content %}{% endblock %}  
