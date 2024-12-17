@@ -4,6 +4,41 @@ from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 from flask_login import UserMixin
 from random import randint, shuffle
+from sqlalchemy.ext.mutable import Mutable
+
+
+class MutableDict(Mutable, dict):
+    @classmethod
+    def coerce(cls, key, value):
+        "Convert plain dictionaries to MutableDict."
+
+        if not isinstance(value, MutableDict):
+            if isinstance(value, dict):
+                return MutableDict(value)
+
+            # this call will raise ValueError
+            return Mutable.coerce(key, value)
+        else:
+            return value
+
+    def __setitem__(self, key, value):
+        "Detect dictionary set events and emit change events."
+
+        dict.__setitem__(self, key, value)
+        self.changed()
+
+    def __delitem__(self, key):
+        "Detect dictionary del events and emit change events."
+
+        dict.__delitem__(self, key)
+        self.changed()
+
+    def __getstate__(self):
+        return dict(self)
+
+    def __setstate__(self, state):
+        self.update(state)
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -138,71 +173,66 @@ class Game(db.Model):
 
         return 'a moment ago'
 
+BLANK_BOARD = {'rows':[
+['$','.','.','#','.','.','.','$','.','.','.','#','.','.','$'],
+['.','%','.','.','.','@','.','.','.','@','.','.','.','%','.'],
+['.','.','%','.','.','.','#','.','#','.','.','.','%','.','.'],
+['#','.','.','%','.','.','.','#','.','.','.','%','.','.','#'],
+['.','.','.','.','%','.','.','.','.','.','%','.','.','.','.'],
+['.','@','.','.','.','@','.','.','.','@','.','.','.','@','.'],
+['.','.','#','.','.','.','#','.','#','.','.','.','#','.','.'],
+['$','.','.','#','.','.','.','*','.','.','.','#','.','.','$'],
+['.','.','#','.','.','.','#','.','#','.','.','.','#','.','.'],
+['.','@','.','.','.','@','.','.','.','@','.','.','.','@','.'],
+['.','.','.','.','%','.','.','.','.','.','%','.','.','.','.'],
+['#','.','.','%','.','.','.','#','.','.','.','%','.','.','#'],
+['.','.','%','.','.','.','#','.','#','.','.','.','%','.','.'],
+['.','%','.','.','.','@','.','.','.','@','.','.','.','%','.'],
+['$','.','.','#','.','.','.','$','.','.','.','#','.','.','$'] 
+]}
+
 class Board(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     game_id = db.Column(db.Integer, db.ForeignKey('game.id'))
-    row1  = db.Column(db.String(15), default='$..#...$...#..$')
-    row2  = db.Column(db.String(15), default='.%...@...@...%.')
-    row3  = db.Column(db.String(15), default='..%...#.#...%..')
-    row4  = db.Column(db.String(15), default='#..%...#...%..#')
-    row5  = db.Column(db.String(15), default='....%.....%....')
-    row6  = db.Column(db.String(15), default='.@...@...@...@.')
-    row7  = db.Column(db.String(15), default='..#...#.#...#..')
-    row8  = db.Column(db.String(15), default='$..#...*...#..$')
-    row9  = db.Column(db.String(15), default='..#...#.#...#..')
-    row10 = db.Column(db.String(15), default='.@...@...@...@.')
-    row11 = db.Column(db.String(15), default='....%.....%....')
-    row12 = db.Column(db.String(15), default='#..%...#...%..#')
-    row13 = db.Column(db.String(15), default='..%...#.#...%..')
-    row14 = db.Column(db.String(15), default='.%...@...@...%.')
-    row15 = db.Column(db.String(15), default='$..#...$...#..$')
+    data = db.Column(MutableDict.as_mutable(db.PickleType), nullable=True, default=BLANK_BOARD)
     chats = db.relationship('Chat', backref='board', lazy='dynamic')
     
     def setTile(self, row, col, char):
-        rowObj = eval('self.row'+str(row))
-        rowlist = list(rowObj)
-        rowlist[col-1] = char
-        exec('self.row'+str(row)+' = \'\'.join(rowlist)')
+        tmp = self.data['rows']
+        tmp[row][col] = char
+        self.data['rows'] = tmp
 
     def getTile(self, row, col):
-        rowObj = eval('self.row'+str(row))
-        return rowObj[col-1]
+        tmp = self.data['rows']
+        return tmp[row][col]
+
+    def isAdjacent(self, row, col):
+        tmp = self.data['rows']
+        nonletters = ['.','#','@','%','$','*']
+        # left
+        if col > 0 and tmp[row][col-1] not in nonletters:
+            return True
+        # right
+        if col < 14 and tmp[row][col+1] not in nonletters:
+            return True
+        # up
+        if row > 0 and tmp[row-1][col] not in nonletters:
+            return True
+        # down
+        if row < 14 and tmp[row+1][col] not in nonletters:
+            return True
+        return False
 
     def randomize(self):
-        allspaces = ''
-        allspaces += self.row1
-        allspaces += self.row2
-        allspaces += self.row3
-        allspaces += self.row4
-        allspaces += self.row5
-        allspaces += self.row6
-        allspaces += self.row7
-        allspaces += self.row8
-        allspaces += self.row9
-        allspaces += self.row10
-        allspaces += self.row11
-        allspaces += self.row12
-        allspaces += self.row13
-        allspaces += self.row14
-        allspaces += self.row15
-        biglist = list(allspaces)
-        shuffle(biglist)
-        self.row1 = ''.join(biglist[0:15])
-        self.row2 = ''.join(biglist[15:30])
-        self.row3 = ''.join(biglist[30:45])
-        self.row4 = ''.join(biglist[45:60])
-        self.row5 = ''.join(biglist[60:75])
-        self.row6 = ''.join(biglist[75:90])
-        self.row7 = ''.join(biglist[90:105])
-        self.row8 = ''.join(biglist[105:120])
-        self.row9 = ''.join(biglist[120:135])
-        self.row10 = ''.join(biglist[135:150])
-        self.row11 = ''.join(biglist[150:165])
-        self.row12 = ''.join(biglist[165:180])
-        self.row13 = ''.join(biglist[180:195])
-        self.row14 = ''.join(biglist[195:210])
-        self.row15 = ''.join(biglist[210:225])
-
+        tmp = self.data['rows']
+        allspaces = []
+        for r in range(len(tmp)):
+            allspaces += tmp[r] 
+        shuffle(allspaces)
+        for r in range(len(tmp)):
+            for c in range(15):
+                tmp[r][c] = allspaces[c + 15*r]
+        self.data['rows'] = tmp
 
 class Chat(db.Model):
     id = db.Column(db.Integer, primary_key=True)

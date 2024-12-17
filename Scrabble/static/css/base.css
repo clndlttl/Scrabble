@@ -1,19 +1,30 @@
 body {
-    background-color: #5ce1e6;
-    color: lightgrey;
+    background-color: black;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
     font-size: medium;
 }
 
+.img-form-container {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    height: 100%;
+}
+
+.img-form-container img {
+    width: 50%;
+}
+
 .form-container {
     background-color: black;
+    display: flex;
+    flex-direction: column;
     padding: 5%;
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    -webkit-transform: translate(-50%, -50%);
-    transform: translate(-50%, -50%);
-    border-radius: 15px;
+    justify-content: center;
+}
+
+.form-container label {
+    color: whitesmoke;
 }
 
 .flexrow {
@@ -21,9 +32,11 @@ body {
     justify-content: center;
 }
 
-#logo {
+.logo {
     width: 200px;
     height: 200px;
+    border: 2pm solid white;
+    border-radius: 8px;
 }
 
 .yellow {
@@ -35,6 +48,14 @@ body {
 }
 
 input {
-    padding: 8px;
+    padding: 3%;
 }
 
+#submit {
+    width: 50%;
+    height: 15%;
+    margin-top: 3%;
+    background-color: lightgrey;
+    font-size: large;
+    cursor: pointer;
+}

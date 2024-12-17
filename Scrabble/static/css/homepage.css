@@ -1,5 +1,5 @@
 body {
-    background-color: #5ce1e6;
+    background-color: black;
     font-family: Verdana, Geneva, Tahoma, sans-serif;
 }
 
@@ -15,8 +15,24 @@ body {
     border-radius: 10px;
 }
 
+.white {
+    color: white;
+}
+
 .whitebg {
-    background-color: whitesmoke;
+    background-color: white;
+}
+
+.lgreybg {
+    background-color: lightgray;
+}
+
+.blackbg {
+    background-color: black;
+}
+
+.yellowbg {
+    background-color: #ffde59;
 }
 
 .icon {
@@ -130,31 +146,40 @@ button {
 /*************************************************/
 
 .board {
-    float: left;
-    margin-top: 20px;
-    margin-left: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 10%;
+    padding-bottom: 15%;
 }
 
-.controls {
+.boardtable {
+    padding: 2;
+}
+
+.score {
     position: fixed;
-    right: 0;
+    left: 0;
     top: 0;
-    margin-top: 28px;
-    margin-right: 20px;
+    margin-top: 20px;
+    margin-left: 20px;
     padding: 20px;
     font-size: x-large;
 }
 
-.scores {
+.score table {
     width: 100%;
-    padding-bottom: 50px;
 }
 
-.scores td {
+.score table td {
     text-align: center;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-bottom: 5px;
 }
 
-.scores .yourturn {
+
+.yourturn {
     border: 2px solid black;
     border-radius: 5px;
     margin: 0; /* Removes extra spacing */
@@ -163,14 +188,64 @@ button {
     background-color: #ffde59;
 }
 
-.scores p {
+.scoretable {
     font-size: x-large;
-
 }
 
-.bank {
-    padding-bottom: 40px;
+.exit {
+    position: fixed;
+    right: 0;
+    top: 0;
+    margin-top: 20px;
+    margin-right: 20px;
+    padding: 20px;
 }
+
+.footbar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 20px;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.swaparea {
+    display: flex;
+    gap: 10px;
+    padding: 20px;
+    width: auto;
+    height: 48px;
+    align-items: center;
+}
+
+#swp {
+    visibility: hidden;
+    min-width: 60px;
+}
+
+.pair {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+}
+
+.rjust {
+    justify-content: right;
+}
+
+.btn1 {
+    width: 80px;
+    height: 50px;
+    font-size: large;
+    background-color: white;
+}
+
 
 .chatbox {
     padding: 20px;
@@ -191,3 +266,4 @@ button {
 .chatbox #_inputtext {
     margin-bottom: 10px;
 }
+

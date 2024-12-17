@@ -5,14 +5,16 @@ from Scrabble.main import bp
 from Scrabble.main.forms import LoginForm, SignupForm
 from Scrabble.main.forms import CreateGameForm
 from Scrabble.models import User, Invite, Game, Board, Chat
-from Scrabble.utils import TileFetcher, isWordValid, isLetter, scoreTransverse, letterValues
+from Scrabble.utils import TileFetcher, isLetter, scoreWords, sortAttempt, getFlatIndex
 import json
 import hashlib
 import os
 
+
 def generate_cache_buster(file_path):
     with open(file_path, 'rb') as f:
         return hashlib.md5(f.read()).hexdigest()
+
 
 def getUsername(id):
     user = User.query.filter_by(id=id).first()
@@ -20,18 +22,22 @@ def getUsername(id):
         return "NotFound"
     return user.username
 
+
 def strlen(s):
     return len(s)
+
 
 @bp.before_app_request
 def register_jinja_globals():
     current_app.jinja_env.globals['getUsername'] = getUsername
     current_app.jinja_env.globals['strlen'] = strlen
 
+
 @bp.route("/")
 @bp.route("/index")
 def index():
     return redirect(url_for('main.home'))
+
 
 @bp.route("/home")
 @login_required
@@ -39,6 +45,7 @@ def home():
     css_file_path = os.path.join(current_app.config['CSS_DIR'], 'homepage.css')
     css_hash = generate_cache_buster(css_file_path)
     return render_template('homepage.html', css_hash=css_hash)
+
 
 @bp.route("/login", methods=['GET', 'POST'])
 def login():
@@ -59,10 +66,12 @@ def login():
     css_hash = generate_cache_buster(css_file_path)
     return render_template('login.html', form=form, css_hash=css_hash)
 
+
 @bp.route("/logout")
 def logout():
     logout_user()
     return redirect(url_for('main.index'))
+
 
 @bp.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -80,6 +89,7 @@ def signup():
     css_file_path = os.path.join(current_app.config['CSS_DIR'], 'base.css')
     css_hash = generate_cache_buster(css_file_path)
     return render_template('signup.html', form=form, css_hash=css_hash)
+
 
 @bp.route('/createGame', methods=['GET', 'POST'])
 @login_required
@@ -118,6 +128,7 @@ def createGame():
     css_file_path = os.path.join(current_app.config['CSS_DIR'], 'base.css')
     css_hash = generate_cache_buster(css_file_path)
     return render_template('createGame.html', form=form, css_hash=css_hash)
+
 
 @bp.route('/showLobby')
 @login_required
@@ -160,6 +171,7 @@ def joinGame():
     db.session.commit()
     return redirect(url_for('main.showLobby'))
 
+
 @bp.route('/deleteGame', methods=['POST'])
 @login_required
 def deleteGame():
@@ -188,165 +200,148 @@ def showBoard():
 
     return render_template('board.html', board=board, tiles=tileFetcher, bank=bank)
 
+
 @bp.route('/playWord', methods=['POST'])
 @login_required
 def playWord():
     board_id = request.values.get('board_id')
-    word = request.values.get('word')
-    direction = request.values.get('direction')
-    rowstr = request.values.get('row')
-    colstr = request.values.get('col')
+    attempt = json.loads(request.values.get('attempt'))
+
+    current_app.logger.debug('attempt = %s',attempt)
 
     rv = {'ERROR':[]}
-    
+
     board = Board.query.filter_by(id=board_id).first()
     if board is None:
-        rv['ERROR'].append('ERROR: Can\'t find board')
+        rv['ERROR'].append('ERROR: Cannot find board')
 
-    if rowstr == '-' and colstr == '-':
-        rv['ERROR'].append('Please click the starting letter location<br>')
+    if len(attempt) == 0:
+        rv['ERROR'].append('Drag at least one letter to the board.')
 
-    if direction == 'undefined':
-        rv['ERROR'].append('Please specify Across or Down<br>')
+    attemptList = sortAttempt(attempt, rv)
 
-    if word == '':
-        rv['ERROR'].append('Please enter a word<br>')
-    elif not isWordValid(word):
-        rv['ERROR'].append('{} is not a valid word'.format(word))
+    current_app.logger.debug('attemptList = %s',attemptList)
+
+    # build a set of attempt locations
+    #attemptIndices = set([ getFlatIndex(tup[0],tup[1]) for tup in attemptList ])
+    attemptIndices = { getFlatIndex(tup[0],tup[1]) : tup[2] for tup in attemptList }
 
     # Done with basic validation
     if len(rv['ERROR']) > 0:
         return json.dumps(rv)
 
-    isHorizontal = (direction == 'A')
-    isVertical = not isHorizontal
-
-    if isHorizontal:
-        col_incr = 1
-        row_incr = 0
-    else:
-        col_incr = 0
-        row_incr = 1
-
-    score = 0
-    wordBonus = 1
     isStar = False
-    isOverlap = False
+    isAdjacent = False
 
-    transverse = []
-    toWrite = []
+    _, bank, playerScore = board.game.getPlayerStuff(current_user.id)
 
-    playerIdx, bank, playerScore = board.game.getPlayerStuff(current_user.id)
+    words = {}
 
-    # make a copy of the bank
-    bankCopy = list(bank)
+    for letter in attemptList:
 
-    row = int(rowstr)
-    col = int(colstr)
+        # letter is a tuple of (rowIdx, colIdx, letter)
+        row = letter[0]
+        col = letter[1]
+        let = letter[2]
 
-    for letter in word.lower():
+        # check for board adjacency first
+        isAdjacent |= board.isAdjacent(row, col)
+ 
+        # what space does this letter cover?
+        space = board.getTile(row, col)
+        if space == '*':
+            isStar = True
 
-        # range check
-        if row < 1 or row > 15 or col < 1 or col > 15:
-            rv['ERROR'].append('Word goes off board')
-            return json.dumps(rv)
-
-        letterBonus = 1
-
-        tile = board.getTile(row, col)
-
-        if not isLetter(tile):
-
-            # find transverse words
-            if isVertical:
-                w = ''
-                colStart = col
-                while colStart > 1 and isLetter( board.getTile(row, colStart-1) ):
-                    colStart -= 1
-                w += board.getTile(row, colStart)
-                colEnd = colStart
-                while colEnd < 15 and (isLetter( board.getTile(row, colEnd+1) ) or ((colEnd+1) == col)):
-                    colEnd += 1
-                    w += board.getTile(row, colEnd)
-                wlen = colEnd - colStart
-                if wlen > 0:
-                    transverse.append( (w, letter) )
-            else:
-                w = ''
-                rowStart = row
-                while rowStart > 1 and isLetter( board.getTile(rowStart-1, col) ):
-                    rowStart -= 1
-                w += board.getTile(rowStart, col)
-                rowEnd = rowStart
-                while rowEnd < 15 and (isLetter( board.getTile(rowEnd+1, col)) or ((rowEnd+1) == row)):
-                    rowEnd += 1
-                    w += board.getTile(rowEnd, col)
-                wlen = rowEnd - rowStart
-                if wlen > 0:
-                    transverse.append( (w, letter) )
-
-            if tile == '*':
-                isStar = True
-            elif tile == '#':
-                letterBonus = 2
-            elif tile == '@':
-                letterBonus = 3
-            elif tile == '%':
-                wordBonus *= 2
-            elif tile == '$':
-                wordBonus *= 3
-
-            if letter not in bankCopy:
-                rv['ERROR'].append('You don\'t have letter {}'.format(letter))
-                return json.dumps(rv)
-            else:
-                toWrite.append( (row, col, letter) )
-                bankCopy.remove(letter)
-
+        # look for a horizontal word
+        w = []
+        hash = 0
+        # rewind to start of word
+        colStart = col
+        while colStart > 0 and (isLetter( board.getTile(row, colStart-1) ) or getFlatIndex(row, colStart-1) in attemptIndices):
+            colStart -= 1
+        # add first letter, noting if it's already there or new
+        fi = getFlatIndex(row,colStart)
+        hash += fi
+        if fi in attemptIndices:
+            w.append( (attemptIndices[fi], board.getTile(row, colStart)) )
         else:
-            if tile != letter:
-                rv['ERROR'].append('Tile mismatch detected')
-                return json.dumps(rv)
-            isOverlap = True
+            w.append( (board.getTile(row, colStart), None) )
+        # read out the word
+        colEnd = colStart
+        while colEnd < 14 and (isLetter( board.getTile(row, colEnd+1) ) or (getFlatIndex(row,colEnd+1) in attemptIndices)):
+            colEnd += 1
+            fi = getFlatIndex(row,colEnd)
+            hash += fi
+            if getFlatIndex(row,colEnd) in attemptIndices:
+                w.append( (attemptIndices[fi], board.getTile(row, colEnd)) )
+            elif isLetter( board.getTile(row,colEnd) ):
+                w.append( (board.getTile(row, colEnd), None) )
+            else:
+                rv['ERROR'].append('Word is not continuous.')
+        if colEnd != colStart:
+            words[hash] = w
 
-        score += letterValues[letter] * letterBonus
-
-        row += row_incr
-        col += col_incr
-
-    score *= wordBonus
+        # look for a vertical word
+        w = []
+        hash = 0
+        # rewind to start of word
+        rowStart = row
+        while rowStart > 0 and (isLetter( board.getTile(rowStart-1, col) ) or getFlatIndex(rowStart-1, col) in attemptIndices):
+            rowStart -= 1
+        # add first letter
+        fi = getFlatIndex(rowStart,col)
+        hash += fi
+        if getFlatIndex(rowStart,col) in attemptIndices:
+            w.append( (attemptIndices[fi], board.getTile(rowStart, col)) )
+        else:
+            w.append( (board.getTile(rowStart, col), None) )
+        # read out the word
+        rowEnd = rowStart
+        while rowEnd < 14 and (isLetter( board.getTile(rowEnd+1, col)) or (getFlatIndex(rowEnd+1,col) in attemptIndices)):
+            rowEnd += 1
+            fi = getFlatIndex(rowEnd,col)
+            hash += fi
+            if getFlatIndex(rowEnd,col) in attemptIndices:
+                w.append( (attemptIndices[fi], board.getTile(rowEnd, col)) )
+            elif isLetter( board.getTile(rowEnd, col) ):
+                w.append( (board.getTile(rowEnd, col), None) )
+            else:
+                rv['ERROR'].append('Word is not continuous.')
+        if rowEnd != rowStart:
+            words[hash] = w
 
     # word must touch at least one played tile, unless it's the first move
-    if board.game.numTilesPlayed() > 0 and len(transverse) == 0 and not isOverlap:
+    if board.game.numTilesPlayed() > 0 and not isAdjacent:
         rv['ERROR'].append('Word must touch at least one other tile')
         return json.dumps(rv)
-
     # first play must cover the star
-    if board.game.numTilesPlayed() == 0 and not isStar:
-        rv['ERROR'].append('First play must cover the center tile')
+    elif board.game.numTilesPlayed() == 0 and not isStar:
+        rv['ERROR'].append('First play must cover the logo tile')
+        return json.dumps(rv)
+    
+    if len(rv['ERROR']) > 0:
         return json.dumps(rv)
 
-    # must use at least one letter from bank
-    if len(toWrite) == 0:
-        rv['ERROR'].append('You must place at least one tile')
+    # Validate and score all words
+    score = 0
+    thisScore = scoreWords(words, rv)
+    if thisScore == 0:
         return json.dumps(rv)
-
-    # Validate and score all transverse words
-    for tr in transverse:
-        transverseScore, repairedWord = scoreTransverse(tr)
-        if transverseScore == 0:
-            rv['ERROR'].append('{} is not a valid word'.format(repairedWord))
-            return json.dumps(rv)
-        else:
-            score += transverseScore
+    else:
+        score += thisScore
 
     # Check for bingo (50 points for using all 7 letters)
-    if len(toWrite) == 7:
+    if len(attemptList) == 7:
         score += 50
 
     # Write in the new tiles
-    for lc in toWrite:
-        board.setTile( lc[0], lc[1], lc[2] )
+    for tup in attemptList:
+        board.setTile( tup[0], tup[1], tup[2] )
+    
+    # remove used letters from player's bank
+    bankCopy = list(bank)
+    for tup in attemptList:
+        bankCopy.remove(tup[2])
 
     # update/refill bank, incr score
     board.game.setPlayerStuff(current_user.id, ''.join(bankCopy), playerScore + score)
@@ -359,18 +354,23 @@ def playWord():
 
     db.session.commit()
 
-    flash('You played \'{}\' for {} points!'.format(word.lower(), score))
+    flash('You scored {} points!'.format(score))
     if board.game.winner is not None:
         flash('{} has won the game!'.format(getUsername(board.game.winner)))
 
     # return json to the client
     return json.dumps(rv)
 
+
 @bp.route('/swapTiles', methods=['POST'])
 @login_required
 def swapTiles():
     board_id = request.values.get('board_id')
-    word = request.values.get('word')
+    swap = json.loads(request.values.get('swap'))
+    current_app.logger.debug(swap)
+    word = ''.join(swap)
+
+    current_app.logger.debug('swap word = %s', word)
 
     rv = {'ERROR':[]}
 

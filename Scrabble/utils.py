@@ -1,4 +1,4 @@
-from flask import url_for
+from flask import url_for, current_app
 import requests
 
 letterValues = {
@@ -8,6 +8,29 @@ letterValues = {
     'p':3, 'q':10, 'r':1, 's':1, 't':1,
     'u':1, 'v':4,  'w':4, 'x':8, 'y':4, 'z':10
 }
+
+def sortAttempt(attempt, rv):
+    # attempt = [ {'letter':'a','row':'2','col':'7'}, ... ]
+
+    # check if all rows are the same (also sort lo to hi)
+    rows = list(set([int(x['row']) for x in attempt]))
+    cols = list(set([int(x['col']) for x in attempt]))
+    rows.sort()
+    cols.sort()
+
+    current_app.logger.debug('rows = %s', rows)
+    current_app.logger.debug('cols = %s', cols)
+
+    # ensure word is continuous
+    if len(rows) != 1 and len(cols) != 1:
+        rv['ERROR'].append('Word is not continuous.')
+
+    tuples = [(int(x['row']),int(x['col']),x['letter']) for x in attempt]
+    tuples.sort()
+    return tuples
+
+def getFlatIndex(row, col):
+    return 15*row + col
 
 def isWordValid(word):
     url = "https://scrabblewordfinder.org/dictionary/" + word.lower()
@@ -27,38 +50,55 @@ def isWordValid(word):
 def isLetter(char):
     return char not in ['.','#','@','%','$','*']
 
-def scoreTransverse(tr):
-    word = tr[0]
-    missing = tr[1]
+def scoreWords(words, rv):
+    '''
+    words = {
+        324: [('d',None),('o','.'),('g','#')], // this means 'd' was already played, and 'g' is double letter value
+        135: [ ]
+    }
+    '''
+    current_app.logger.debug('words = %s',words)
     score = 0
-    wordBonus = 1
-    repaired = ''
 
-    for ch in word:
-        if isLetter(ch):
-            score += letterValues[ch]
-            repaired += ch
+    seenHashes = set()
+
+    for hash in words:
+
+        if hash in seenHashes:
+            current_app.logger.debug('Redundant word found!')
             continue
+        else:
+            seenHashes.add(hash)
 
-        if ch == '.':
-            score += letterValues[missing]
-        elif ch == '#':
-            score += letterValues[missing] * 2
-        elif ch == '@':
-            score += letterValues[missing] * 3
-        elif ch == '%':
-            score += letterValues[missing]
-            wordBonus *= 2
-        elif ch == '$':
-            score += letterValues[missing]
-            wordBonus *= 3
-        
-        repaired += missing
-    
-    if not isWordValid(repaired):
-        score = 0
+        w = ''
+        wordBonus = 1
 
-    return (score * wordBonus, repaired)
+        for tup in words[hash]:
+
+            letter = tup[0]
+            space = tup[1]
+
+            w += letter
+
+            if space is None or space == '.':
+                score += letterValues[letter]
+            elif space == '#':
+                score += letterValues[letter] * 2
+            elif space == '@':
+                score += letterValues[letter] * 3
+            elif space == '%':
+                score += letterValues[letter]
+                wordBonus *= 2
+            elif space == '$':
+                score += letterValues[letter]
+                wordBonus *= 3
+
+        if not isWordValid(w):
+            score = 0
+            rv['ERROR'].append(f'{w} is not a valid word.')
+            break
+
+    return score * wordBonus
 
 
 class TileFetcher:
@@ -97,7 +137,7 @@ class TileFetcher:
                       '$': url_for('static', filename='tiles/tw.jpg')
                       }
 
-    def get(self, code):
+    def getURL(self, code):
         if code.lower() not in self.codes:
             return self.codes['.']
         return self.codes[code.lower()]

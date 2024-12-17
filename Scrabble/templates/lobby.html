@@ -4,13 +4,13 @@
 
     <div class>
       {% for letter in current_user.username %}
-      <img class="left" src="{{ tiles.get(letter) }}">
+      <img class="left" src="{{ tiles.getURL(letter) }}">
       {% endfor %}
     </div> 
  
-    <a href="{{ url_for('main.createGame') }}"><i class="icon yellow fa-regular fa-square-plus fa-2x"></i></a>
+    <a href="{{ url_for('main.createGame') }}"><i class="icon turq fa-regular fa-square-plus fa-2x"></i></a>
  
-    <a href="{{ url_for('main.logout') }}"><i class="icon yellow fa-solid fa-arrow-right-from-bracket fa-2x"></i></a>
+    <a href="{{ url_for('main.logout') }}"><i class="icon turq fa-solid fa-arrow-right-from-bracket fa-2x"></i></a>
  
   </div>
 
