@@ -1,11 +1,14 @@
 from Scrabble import db, login
-from datetime import datetime
+from datetime import datetime, timezone
+import pytz
 from werkzeug.security import generate_password_hash
 from werkzeug.security import check_password_hash
 from flask_login import UserMixin
 from random import randint, shuffle
 from sqlalchemy.ext.mutable import Mutable
 
+def get_utcnow():
+    return datetime.now(timezone.utc)
 
 class MutableDict(Mutable, dict):
     @classmethod
@@ -43,7 +46,6 @@ class MutableDict(Mutable, dict):
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
-    email = db.Column(db.String(64), index=True, unique=True)
     password_hash = db.Column(db.String(128))
 
     invites = db.relationship('Invite', backref='user', lazy='dynamic')
@@ -70,7 +72,7 @@ class Invite(db.Model):
 class Game(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64))
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, index=True, default=get_utcnow)
     isComplete = db.Column(db.Boolean, default=False)
     player1 = db.Column(db.Integer)
     player2 = db.Column(db.Integer)
@@ -82,6 +84,7 @@ class Game(db.Model):
     turn = db.Column(db.Integer, default=0)
     whosUp = db.Column(db.Integer)
     winner = db.Column(db.Integer)
+    msg = db.Column(db.String(128), default='')
     invites = db.relationship('Invite', backref='game', lazy='dynamic')
     board = db.relationship('Board', backref='game', lazy='dynamic')
 
@@ -93,12 +96,15 @@ class Game(db.Model):
             self.whosUp = self.player1
 
     def checkForWinner(self):
-        idx, bank, score = self.getPlayerStuff(self.whosUp)
-        if len(bank) == 0 and len(self.pool) == 0:
-            self.isComplete = True
-            rank = {self.player1 : self.score1,
-                    self.player2 : self.score2}
-            self.winner = max(rank, key=rank.get)
+        if len(self.pool) == 0:
+            if len(self.bank1) == 0 or len(self.bank2) == 0:
+                self.isComplete = True
+                if self.score1 > self.score2:
+                    self.winner = self.player1
+                elif self.score2 > self.score1:
+                    self.winner = self.player2
+                else:
+                    self.winner = -1 # indicates a tie!
 
     def getPlayerStuff(self, user_id):
         if user_id == self.player1:
@@ -120,18 +126,28 @@ class Game(db.Model):
         self.pool = 'aaaaaaaaabbccddddeeeeeeeeeeeeffggghhiiiiiiiiijjkkllllmmnnnnnnooooooooppqrrrrrrssssttttttuuuuvvwwxyyz'
     
     def refillBank(self, idx):
-        needed = 7 - len(eval('self.bank'+str(idx)))
+        if idx == 1:
+            bank = self.bank1
+        else:
+            bank = self.bank2
+        needed = 7 - len(bank)
         pool = list(self.pool)
         for i in range(needed):
             N = len(pool)
             if N > 0:
                 ridx = randint(0,N-1)
-                exec('self.bank'+str(idx)+' += pool[ridx]')
+                if idx == 1:
+                    self.bank1 += pool[ridx]
+                else:
+                    self.bank2 += pool[ridx]
                 del pool[ridx]
         self.pool = ''.join(pool)
     
     def setBank(self, idx, b):
-        exec('self.bank'+str(idx)+' = b')
+        if idx == 1:
+            self.bank1 = b
+        elif idx == 2:
+            self.bank2 = b
 
     def returnToPool(self, s):
         self.pool += s
@@ -140,7 +156,7 @@ class Game(db.Model):
         return 100 - len(self.pool) - len(self.bank1) - len(self.bank2)
 
     def printElapsedTime(self):
-        elapsed = datetime.utcnow() - self.timestamp
+        elapsed = get_utcnow() - pytz.utc.localize(self.timestamp)
         s = ''
         nyears = int(elapsed.days / 365)
         if nyears:
@@ -237,6 +253,6 @@ class Board(db.Model):
 class Chat(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     board_id = db.Column(db.Integer, db.ForeignKey('board.id'))
-    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, index=True, default=get_utcnow)
     user = db.Column(db.String(8))
     text = db.Column(db.String(128))

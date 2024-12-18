@@ -62,7 +62,7 @@ def scoreWords(words, rv):
 
     seenHashes = set()
 
-    scoredWords = {}
+    wordScoreTuples = []
 
     for hash in words:
 
@@ -83,7 +83,7 @@ def scoreWords(words, rv):
 
             w += letter
 
-            if space is None or space == '.':
+            if space in [None,'.','*']:
                 thisScore += letterValues[letter]
             elif space == '#':
                 thisScore += letterValues[letter] * 2
@@ -99,13 +99,13 @@ def scoreWords(words, rv):
         if not isWordValid(w):
             finalScore = 0
             rv['ERROR'].append(f'"{w}" is not a valid word.')
-            scoredWords.clear()
+            wordScoreTuples.clear()
             break
         else:
             finalScore += thisScore * wordBonus
-            scoredWords[w] = thisScore * wordBonus
+            wordScoreTuples.append( (w, thisScore * wordBonus) )
 
-    return finalScore, scoredWords
+    return finalScore, wordScoreTuples
 
 
 class TileFetcher:

@@ -21,7 +21,7 @@
 </div>
 
 
-<div class="score softbox blackbg">
+<div class="score softboxwhite blackbg">
     <table class="scoretable">
         <tr>
             {% if board.game.whosUp == board.game.player1 %}
@@ -51,11 +51,11 @@
     </table>
 </div>
 
-<div class="exit softbox blackbg">
+<div class="exit softboxwhite blackbg">
     <i class="icon yellow fa-solid fa-arrow-right-from-bracket fa-2x" onclick="showLobby()"></i>
 </div>
 
-<div class="footbar softbox blackbg">
+<div class="footbar softboxwhite blackbg">
     <div class="pair">
     <div class="boardtable softbox whitebg">
         <table>
@@ -80,17 +80,15 @@
                 </tr>
             </table>
         </div>
-        <button class="btn1" onclick="swapTiles()">Swap</button>
+        <button class="btn1 softbox" onclick="swapTiles()">Swap</button>
     </div>
     </div>
     
     <div class="pair rjust">
-        <p style="color: red" id="_msg"></p>
+        <p class="gamemsg" id="_msg"><i>{{ board.game.msg }}</i></p>
         {% if board.game.whosUp == current_user.id %}
-        <button class="btn1" onclick="playWord()">Play</button>
-        <button class="btn1" onclick="reset()">Reset</button>
-        {% else %}
-            {% include "_get_flash.html" %}
+        <button class="btn1 softbox" onclick="playWord()">Play</button>
+        <button class="btn1 softbox" onclick="reset()">Reset</button>
         {% endif %}
     </div>
 
@@ -212,6 +210,7 @@
             success: function(data, textStatus) {
                 document.body.style.cursor = 'default';
                 if (data.ERROR.length) {
+                    $('#_msg').css('color','red');
                     $('#_msg').html(data.ERROR);
                     reset();
                 }

@@ -19,8 +19,8 @@ RUN pip install flask-migrate
 RUN pip install flask-sqlalchemy
 RUN pip install flask-login
 RUN pip install gunicorn 
-RUN pip install websockets 
 RUN pip install requests
+RUN pip install pytz
 
 # nginx
 RUN rm /etc/nginx/sites-enabled/default

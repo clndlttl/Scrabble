@@ -1,6 +1,9 @@
 <div class="headbar softbox blackbg">
 
-    <img class="logo" src="{{ url_for('static', filename='images/Inertial-Frame-Logo.png') }}">
+    <a href="https://www.inertialframe.dev">
+      <img class="logo"
+       src="{{ url_for('static', filename='images/Inertial-Frame-Logo.png') }}">
+    </a>
     
     <div class="pair rjust">
       <div class="boardtable softbox whitebg">
@@ -9,28 +12,31 @@
         {% endfor %}
       </div> 
  
-      <div class="softbox yellowbg pad20">
+      <div class="softboxwhite yellowbg pad20">
         <a href="{{ url_for('main.logout') }}"><i class="icon black fa-solid fa-arrow-right-from-bracket fa-2x"></i></a>
       </div>
     </div>
 
 </div>
 
-<div class="maincolumn softbox turqbg">
+<div class="maincolumn softestbox turqbg">
 
   <div class="spacer"></div>
 
-  <div class="addbtn softbox blackbg">
+  <div class="addbtn softboxwhite blackbg">
     <a href="{{ url_for('main.createGame') }}"><i class="icon yellow fa-regular fa-square-plus fa-2x"></i></a>
   </div>
 
   <div class="spacer"></div>
   
   {% if pending %}
-  <div class="gamebox softbox whitebg">
+  <div class="gamebox softerbox whitebg">
     <p class="title black">You're invited to join:</p>
 
     {% for game in pending %}
+    <div class="gamename softerbox yellowbg">
+      <p><i>"{{ game.name }}"</i></p>
+    </div>
     <div class="game softbox smokebg">
 
       <p class="label"><b>Vs: </b>
@@ -42,8 +48,8 @@
       </p>   
 
       <p class="label">Created {{ game.printElapsedTime() }}</p>
-      <button class="btn1" onclick="joinGame('{{ game.id }}')">Join</button>
-      <button class="btn1" onclick="deleteGame('{{ game.id }}')">Deny</button>
+      <button class="btn1 softbox" onclick="joinGame('{{ game.id }}')">Join</button>
+      <button class="btn1 softbox" onclick="deleteGame(event,'{{ game.id }}')">Deny</button>
     </div>
 
     <div class="spacer"></div>
@@ -54,11 +60,13 @@
 
 
   {% if accepted %}
-  <div class="gamebox softbox whitebg">
+  <div class="gamebox softerbox whitebg">
     <p class="title black">Active Games:</p>
 
     {% for game in accepted %}
-
+    <div class="gamename softerbox yellowbg">
+      <p><i>"{{ game.name }}"</i></p>
+    </div>
     <div class="game activegame softbox smokebg" onclick="showBoard('{{ game.id }}')">
       <p class="label"><b>Vs: </b>
         {% if game.player1 == current_user.id %}
@@ -82,7 +90,7 @@
       
       <p class="label">{{ strlen( game.pool ) }} letters left</p>
 
-      <button class="btn1" onclick="deleteGame('{{ game.id }}')">Quit</button>
+      <button class="btn1 softbox" onclick="deleteGame(event,'{{ game.id }}')">Quit</button>
 
     </div>
 
@@ -113,7 +121,8 @@
       }
     });
   }
-  function deleteGame(gameId) {
+  function deleteGame(event, gameId) {
+    event.stopPropagation();
     var fd = new FormData;
     fd.append('game_id', gameId);
 

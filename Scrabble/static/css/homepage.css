@@ -15,6 +15,21 @@ body {
     border-radius: 10px;
 }
 
+.softboxwhite {
+    border: 2px solid white;
+    border-radius: 10px;
+}
+
+.softerbox {
+    border: 3px solid darkgray;
+    border-radius: 30px;
+}
+
+.softestbox {
+    border: 5px solid whitesmoke;
+    border-radius: 50px;
+}
+
 .white {
     color: white;
 }
@@ -123,7 +138,7 @@ button {
 }
 
 .headbar .logo {
-    width: 8%;
+    width: 20%;
     border: 2px solid white;
     border-radius: 8px;
 }
@@ -159,6 +174,19 @@ button {
     align-items: center;
     width: 100%;
     margin-bottom: 30px;
+}
+
+.gamename {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    width: 80%;
+    margin-bottom: -15px;
+}
+
+.gamename p {
+    font-size: x-large;
+    font-family: 'Lucida Sans';
 }
 
 .game {
@@ -273,6 +301,11 @@ button {
 #swp {
     visibility: hidden;
     min-width: 60px;
+}
+
+.gamemsg {
+    color: #5ce1e6;
+    font-size: large;
 }
 
 

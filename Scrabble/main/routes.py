@@ -324,7 +324,7 @@ def playWord():
 
     # Validate and score all words
     score = 0
-    thisScore, scoredWordDict = scoreWords(words, rv)
+    thisScore, wordScoreTuples = scoreWords(words, rv)
     if thisScore == 0:
         return json.dumps(rv)
     else:
@@ -352,12 +352,16 @@ def playWord():
     # check for game end
     board.game.checkForWinner()
 
-    db.session.commit()
-
-    for w in scoredWordDict:
-        flash(f'You played "{w}" for {scoredWordDict[w]} points!')
+    newmsg = []
+    
+    for tup in wordScoreTuples:    
+        newmsg.append(f'{getUsername(current_user.id)} played "{tup[0]}" for {tup[1]} points!')
     if board.game.winner is not None:
-        flash(f'{getUsername(board.game.winner)} has won the game!')
+        newmsg.append(f'{getUsername(board.game.winner)} is the winner!!!')
+    
+    board.game.msg = '\n'.join(newmsg)
+    
+    db.session.commit()
 
     # return json to the client
     return json.dumps(rv)
@@ -368,22 +372,19 @@ def playWord():
 def swapTiles():
     board_id = request.values.get('board_id')
     swap = json.loads(request.values.get('swap'))
-    current_app.logger.debug(swap)
     word = ''.join(swap)
-
-    current_app.logger.debug('swap word = %s', word)
 
     rv = {'ERROR':[]}
 
     board = Board.query.filter_by(id=board_id).first()
     if board is None:
-        rv['ERROR'].append('ERROR: Can\'t find board')
+        rv['ERROR'].append('ERROR: Cannot find board.')
 
     if word == '':
-        rv['ERROR'].append('Please enter one to seven letters to swap<br>')
+        rv['ERROR'].append('Drag 1 to 7 letters to the swap area, then press swap')
 
     if len(word) > len(board.game.pool):
-        rv['ERROR'].append('Swap failed, there are only {} letters in the pool'.format(len(board.game.pool)))
+        rv['ERROR'].append(f'Swap failed: only {len(board.game.pool)} letters left in the pool!')
 
     # Done with basic validation
     if len(rv['ERROR']) > 0:
@@ -394,9 +395,6 @@ def swapTiles():
     bankList = list(bank)
 
     for letter in word.lower():
-        if letter not in bankList:
-            rv['ERROR'].append('You don\'t have letter {} to swap'.format(letter))
-            return json.dumps(rv)
         bankList.remove(letter)
         removed.append(letter)
 
@@ -407,9 +405,10 @@ def swapTiles():
     # advance turn
     board.game.advanceTurn()
 
+    board.game.msg = f'{getUsername(current_user.id)} swapped {len(removed)} tiles'
+    
     db.session.commit()
 
-    flash('You swapped {} tiles'.format(len(word)))
 
     return json.dumps(rv)
 
