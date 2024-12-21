@@ -196,7 +196,18 @@ def showBoard():
     tileFetcher = TileFetcher()
 
     _, bankstr, _ = board.game.getPlayerStuff(current_user.id) 
-    bank = list(bankstr) 
+    bank = list(bankstr)
+    
+    # Log out board state
+    log = {
+        'board':board.data['rows'],
+        'bonuses': {'#':'Double letter value',
+                    '@':'Triple letter value',
+                    '%':'Double word value',
+                    '$':'Triple word value'},
+        'bank': list(bankstr),
+    }
+    current_app.logger.debug(json.dumps(log, indent=4)) 
 
     return render_template('board.html', board=board, tiles=tileFetcher, bank=bank)
 
