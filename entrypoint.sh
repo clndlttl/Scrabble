@@ -2,6 +2,7 @@ cd /var/www
 
 # start nginx and supervisor (gunicorn, rq workers) 
 service nginx start
+service redis-server start
 service supervisor start
 
 # create the migrations folder if it doesn't exist, but it should!

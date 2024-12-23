@@ -3,6 +3,8 @@ from Scrabble.config import Config
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from redis import Redis
+from rq import Queue
 
 import logging
 from logging.handlers import RotatingFileHandler
@@ -35,6 +37,9 @@ def create_app(config_class=Config):
     app.logger.debug('register blueprint')
     from Scrabble.main import bp as main_bp
     app.register_blueprint(main_bp)
+
+    app.redis = Redis(host='localhost', port=6379, decode_responses=True)
+    app.task_queue = Queue('scrabble-queue', connection=app.redis)
 
     return app
 
