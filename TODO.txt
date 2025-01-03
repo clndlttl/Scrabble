@@ -1,0 +1,5 @@
+- colorize bonus tiles
+- make cover image lower resolution
+- incorporate emails with sendgrid
+- replace API query with ENABLE dictionary
+- allow bot to swap tiles

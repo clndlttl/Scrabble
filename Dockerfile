@@ -25,6 +25,7 @@ RUN pip install requests
 RUN pip install pytz
 RUN pip install rq
 RUN pip install litellm
+RUN pip install pytrie
 
 # nginx
 RUN rm /etc/nginx/sites-enabled/default
@@ -39,6 +40,7 @@ COPY deployment/rqworker.conf /etc/supervisor/conf.d/
 COPY Scrabble Scrabble
 COPY wsgi.py entrypoint.sh ./
 COPY .env ./
+COPY enable.txt ./
 
 EXPOSE 80
 

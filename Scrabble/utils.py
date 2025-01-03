@@ -1,6 +1,7 @@
 from flask import url_for, current_app
 from Scrabble import db
 from Scrabble.models import User, Board
+from Scrabble.enableTrie import trie
 import requests
 import json
 
@@ -39,20 +40,24 @@ def sortAttempt(attempt, rv):
 def getFlatIndex(row, col):
     return 15*row + col
 
-def isWordValid(word):
-    url = "https://scrabblewordfinder.org/dictionary/" + word.lower()
-    r = requests.get(url)
-    lines = r.text.splitlines()
-    idx = 0
-    for line in lines:
-        if 'check_dict_page' in line:
-            result = lines[idx+3]
-            if 'Yes' in result:
-                return True
-            else:
-                return False
-        else:
-            idx += 1
+def isWordInEnable(word):
+    rv = word in trie
+    return rv
+
+#def isWordValid(word):
+#    url = "https://scrabblewordfinder.org/dictionary/" + word.lower()
+#    r = requests.get(url)
+#    lines = r.text.splitlines()
+#    idx = 0
+#    for line in lines:
+#        if 'check_dict_page' in line:
+#            result = lines[idx+3]
+#            if 'Yes' in result:
+#                return True
+#            else:
+#                return False
+#        else:
+#            idx += 1
 
 def isLetter(char):
     return char not in ['.','#','@','%','$','*']
@@ -103,7 +108,7 @@ def scoreWords(words, rv):
                 thisScore += letterValues[letter]
                 wordBonus *= 3
 
-        if not isWordValid(w):
+        if not isWordInEnable(w):
             finalScore = 0
             rv['ERROR'].append(f'"{w}" is not a valid word.')
             wordScoreTuples.clear()
@@ -314,8 +319,8 @@ def util_playWord(user_id, board_id, attempt):
     db.session.commit()
 
     # User 1 must be username AI
-    if board.game.whosUp == 1:
-        launch_AI_task(board_id)
+    #if board.game.whosUp == 1:
+    #    launch_AI_task(board_id)
 
     return json.dumps(rv)
 
@@ -330,7 +335,8 @@ def launch_AI_task(board_id):
     #    db.session.commit()
     
     args = [board_id]
-    rq_job = current_app.task_queue.enqueue('Scrabble.task.makeAImove', *args, job_timeout=120)
+    #rq_job = current_app.task_queue.enqueue('Scrabble.task.makeChatGPTmove', *args, job_timeout=120)
+    rq_job = current_app.task_queue.enqueue('Scrabble.task.trieSearch', *args, job_timeout=120)
     
     #task = Task(id=rq_job.get_id(), name=taskName, timeout_sec=-1)
     #db.session.add(task)
