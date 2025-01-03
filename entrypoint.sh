@@ -9,7 +9,7 @@ service supervisor start
 if [ ! -d /var/www/migrations ]; then
     flask db init
 fi
-#flask db stamp head
+flask db stamp head
 flask db migrate
 flask db upgrade
 

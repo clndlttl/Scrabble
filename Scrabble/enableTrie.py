@@ -1,4 +1,3 @@
-from Scrabble.utils import isLetter, letterValues, scoreWord
 import pytrie
 import pickle
 import os
