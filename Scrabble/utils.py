@@ -1,9 +1,8 @@
+import json
+from time import sleep
 from flask import url_for, current_app
 from Scrabble import db
 from Scrabble.models import User, Board
-from Scrabble.enableTrie import trie
-import requests
-import json
 
 letterValues = {
     'a':1, 'b':3,  'c':3, 'd':2, 'e':1,
@@ -40,9 +39,22 @@ def sortAttempt(attempt, rv):
 def getFlatIndex(row, col):
     return 15*row + col
 
-def isWordInEnable(word):
-    rv = word in trie
-    return rv
+def isWordValid(word):
+    qry = {'query': word}
+    current_app.redis.publish('TrieChannel', json.dumps(qry))
+    current_app.logger.debug("Sent query, waiting for queryResponse...")
+
+    qr = False
+    # Blocking call to listen for one message
+    for msg in current_app.pubsub.listen():
+        current_app.logger.debug('message = %s', msg)
+        if msg['type'] == 'message':
+            obj = json.loads(msg['data'])
+            if 'queryResponse' in obj:
+                qr = obj['queryResponse']
+                current_app.logger.debug('isValid = %s', qr)
+                break
+    return qr
 
 #def isWordValid(word):
 #    url = "https://scrabblewordfinder.org/dictionary/" + word.lower()
@@ -81,8 +93,8 @@ def scoreWords(words, rv):
         if hash in seenHashes:
             current_app.logger.debug('Redundant word found!')
             continue
-        else:
-            seenHashes.add(hash)
+        
+        seenHashes.add(hash)
 
         w = ''
         wordBonus = 1
@@ -108,7 +120,7 @@ def scoreWords(words, rv):
                 thisScore += letterValues[letter]
                 wordBonus *= 3
 
-        if not isWordInEnable(w):
+        if not isWordValid(w):
             finalScore = 0
             rv['ERROR'].append(f'"{w}" is not a valid word.')
             wordScoreTuples.clear()
@@ -197,7 +209,6 @@ def util_playWord(user_id, board_id, attempt):
         # letter is a tuple of (rowIdx, colIdx, letter)
         row = letter[0]
         col = letter[1]
-        let = letter[2]
 
         # check for board adjacency first
         isAdjacent |= board.isAdjacent(row, col)
@@ -282,8 +293,7 @@ def util_playWord(user_id, board_id, attempt):
     if thisScore == 0:
         current_app.logger.debug('')
         return json.dumps(rv)
-    else:
-        score += thisScore
+    score += thisScore
 
     # Check for bingo (50 points for using all 7 letters)
     if len(attemptList) == 7:
@@ -336,7 +346,7 @@ def launch_AI_task(board_id):
     
     args = [board_id]
     #rq_job = current_app.task_queue.enqueue('Scrabble.task.makeChatGPTmove', *args, job_timeout=120)
-    rq_job = current_app.task_queue.enqueue('Scrabble.task.trieSearch', *args, job_timeout=120)
+    _ = current_app.task_queue.enqueue('Scrabble.task.trieSearch', *args, job_timeout=120)
     
     #task = Task(id=rq_job.get_id(), name=taskName, timeout_sec=-1)
     #db.session.add(task)

@@ -13,4 +13,4 @@ flask db stamp head
 flask db migrate
 flask db upgrade
 
-sleep infinity
+python3 -u enableTrie.py

@@ -39,7 +39,13 @@ def create_app(config_class=Config):
     app.register_blueprint(main_bp)
 
     app.redis = Redis(host='localhost', port=6379, decode_responses=True)
+    
     app.task_queue = Queue('scrabble-queue', connection=app.redis)
+    
+    app.pubsub = app.redis.pubsub()
+    channel_name = "TrieChannel"
+    app.pubsub.subscribe(channel_name)
+    app.logger.debug(f"Subscribed to channel: {channel_name}")
 
     return app
 

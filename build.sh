@@ -15,7 +15,7 @@ if [ "$1" = "new" ]; then
 fi
 
 echo Building image...
-docker build -t scrabble-image .
+docker build --no-cache -t scrabble-image .
 
 echo Running image...
 docker run --name scrabble-cont \
