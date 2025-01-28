@@ -1,0 +1,8 @@
+.env
+logs/
+database/
+ssl/fullchain.pem
+ssl/privkey.pem
+Scrabble/__pycache__/
+Scrabble/main/__pycache__/
+

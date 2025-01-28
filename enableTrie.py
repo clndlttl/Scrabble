@@ -1,6 +1,7 @@
 import pickle
 import os
 import json
+import sys
 
 import logging
 from logging.handlers import RotatingFileHandler
@@ -21,6 +22,24 @@ logger.addHandler(handler)
 # File path for storing the trie
 WORDS_FILE = "enable.txt"
 
+def get_total_size(obj, seen=None):
+    """Recursively finds the total memory size of an object."""
+    if seen is None:
+        seen = set()
+    
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0  # Prevent double-counting for circular references
+    seen.add(obj_id)
+    
+    size = sys.getsizeof(obj)
+    if isinstance(obj, dict):
+        size += sum(get_total_size(k, seen) + get_total_size(v, seen) for k, v in obj.items())
+    elif isinstance(obj, (list, tuple, set, frozenset)):
+        size += sum(get_total_size(i, seen) for i in obj)
+    
+    return size
+
 def build_trie_from_file(file_path):
     """
     Builds a trie from words stored in a text file.
@@ -29,11 +48,9 @@ def build_trie_from_file(file_path):
     trie = pytrie.StringTrie()
     try:
         with open(file_path, "r") as f:
-            print('file is open...')
             for line in f:
                 word = line.strip()
                 if word:  # Ignore empty lines
-                    print(word)
                     trie[word] = True  # Store True as a placeholder value
         logger.debug('Trie built from %s', file_path)
     except FileNotFoundError:

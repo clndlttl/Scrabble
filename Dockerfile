@@ -26,8 +26,11 @@ RUN pip install pytz
 RUN pip install rq
 RUN pip install litellm
 RUN pip install pytrie
+RUN pip install sendgrid
 
 # nginx
+RUN mkdir -m 755 ssl
+COPY ssl/fullchain.pem ssl/privkey.pem ssl/
 RUN rm /etc/nginx/sites-enabled/default
 COPY deployment/scrabble.conf /etc/nginx/sites-available/
 RUN ln -s /etc/nginx/sites-available/scrabble.conf /etc/nginx/sites-enabled/
@@ -41,5 +44,6 @@ COPY Scrabble Scrabble
 COPY wsgi.py entrypoint.sh enable.txt enableTrie.py .env ./
 
 EXPOSE 80
+EXPOSE 443
 
 ENTRYPOINT ["bash","/var/www/entrypoint.sh"]

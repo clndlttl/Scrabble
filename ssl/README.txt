@@ -1,0 +1,1 @@
+Put fullchain.pem and privkey.pem in this directory before running "sudo ./build.sh"

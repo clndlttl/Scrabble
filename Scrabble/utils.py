@@ -1,3 +1,7 @@
+import os
+from dotenv import load_dotenv
+from sendgrid import SendGridAPIClient
+from sendgrid.helpers.mail import Mail
 import json
 from time import sleep
 from flask import url_for, current_app
@@ -291,7 +295,6 @@ def util_playWord(user_id, board_id, attempt):
     score = 0
     thisScore, wordScoreTuples = scoreWords(words, rv)
     if thisScore == 0:
-        current_app.logger.debug('')
         return json.dumps(rv)
     score += thisScore
 
@@ -329,8 +332,10 @@ def util_playWord(user_id, board_id, attempt):
     db.session.commit()
 
     # User 1 must be username AI
-    #if board.game.whosUp == 1:
-    #    launch_AI_task(board_id)
+    if board.game.whosUp == 1:
+        launch_AI_task(board_id)
+    else:
+        sendEmail(board.game.whosUp, board.game.msg)
 
     return json.dumps(rv)
 
@@ -352,3 +357,31 @@ def launch_AI_task(board_id):
     #db.session.add(task)
     #db.session.commit()
 
+def sendEmail(userId, moveInfoString):
+    # using SendGrid's Python Library
+    user = User.query.filter_by(id=userId).first()
+    if user is None:
+        return
+
+
+    load_dotenv(dotenv_path='/var/www/.env')
+    current_app.logger.debug('sending email to %s', user.email)
+    
+    message = Mail(
+        from_email='colin@inertialframe.dev',
+        to_emails=user.email,
+        subject="It's your move in Scrabble!",
+        html_content=f'''
+{moveInfoString}!<br><br>
+Login at https://www.colinfox.dev to make your move.
+        '''
+    )
+
+    try:
+        sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
+        response = sg.send(message)
+        #current_app.logger.debug(response.status_code)
+        #current_app.logger.debug(response.body)
+        #current_app.logger.debug(response.headers)
+    except Exception as e:
+        current_app.logger.debug(str(e))
