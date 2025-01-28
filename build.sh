@@ -15,6 +15,7 @@ if [ "$1" = "new" ]; then
 fi
 
 echo Building image...
+#docker build --no-cache -t scrabble-image .
 docker build -t scrabble-image .
 
 echo Running image...
@@ -22,6 +23,7 @@ docker run --name scrabble-cont \
            --mount type=bind,source=$(pwd)/database/,target=/var/www/database \
            --mount type=bind,source=$(pwd)/logs/,target=/var/www/logs \
            -p 80:80 \
+           -p 443:443 \
            -d scrabble-image
 
 sleep 1

@@ -11,6 +11,7 @@ class LoginForm(FlaskForm):
 
 class SignupForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(max=64)])
+    email = StringField('Email', validators=[DataRequired(), Length(max=64)])
     password = PasswordField('Password', validators=[DataRequired(), Length(max=64)])
     password2 = PasswordField(
         'Repeat Password', validators=[DataRequired(), EqualTo('password')])
@@ -27,8 +28,8 @@ class SignupForm(FlaskForm):
 
 class CreateGameForm(FlaskForm):
     name = StringField('Nickname for this game', validators=[DataRequired(), Length(max=64)])
-    opponent = StringField('Opponent\'s username', default='Colin', validators=[DataRequired(), Length(max=64)])
     random = BooleanField('Randomize this board?')
+    opponent = StringField('Opponent\'s username', default='Colin', validators=[DataRequired(), Length(max=64)])
     submit = SubmitField('Create Game')
 
     def validate_opponent(self, opp):

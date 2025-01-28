@@ -46,6 +46,7 @@ class MutableDict(Mutable, dict):
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
+    email = db.Column(db.String(64), unique=True)
     password_hash = db.Column(db.String(128))
 
     invites = db.relationship('Invite', backref='user', lazy='dynamic')
@@ -189,6 +190,7 @@ class Game(db.Model):
 
         return 'a moment ago'
 
+
 BLANK_BOARD = {'rows':[
 ['$','.','.','#','.','.','.','$','.','.','.','#','.','.','$'],
 ['.','%','.','.','.','@','.','.','.','@','.','.','.','%','.'],
@@ -249,6 +251,15 @@ class Board(db.Model):
             for c in range(15):
                 tmp[r][c] = allspaces[c + 15*r]
         self.data['rows'] = tmp
+
+    def printBoard(self):
+        rv = ''
+        for row in self.data['rows']:
+            rv += ''.join(row)
+            rv += '\n'
+        return rv
+
+
 
 class Chat(db.Model):
     id = db.Column(db.Integer, primary_key=True)

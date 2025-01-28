@@ -18,16 +18,16 @@
   </p>
 
   <p>
+    {{ form.random.label }}
+    {{ form.random }}<br>
+  </p>
+
+  <p>
     {{ form.opponent.label }}<br>
     {{ form.opponent(size=64) }}<br>
     {% for error in form.opponent.errors %}
       <span style="color: red;">[{{ error }}]</span>
     {% endfor %}  
-  </p>
-
-  <p>
-    {{ form.random.label }}
-    {{ form.random }}<br>
   </p>
 
   <p>
