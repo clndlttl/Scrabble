@@ -42,11 +42,6 @@ def create_app(config_class=Config):
     
     app.task_queue = Queue('scrabble-queue', connection=app.redis)
     
-    app.pubsub = app.redis.pubsub()
-    channel_name = "TrieChannel"
-    app.pubsub.subscribe(channel_name)
-    app.logger.debug(f"Subscribed to channel: {channel_name}")
-
     return app
 
 from Scrabble import models

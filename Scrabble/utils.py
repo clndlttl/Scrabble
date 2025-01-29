@@ -45,20 +45,19 @@ def getFlatIndex(row, col):
 
 def isWordValid(word):
     qry = {'query': word}
-    current_app.redis.publish('TrieChannel', json.dumps(qry))
-    current_app.logger.debug("Sent query, waiting for queryResponse...")
+    current_app.redis.xadd('TrieChannel', qry)
+    current_app.logger.debug("Validating word: %s", word)
 
-    qr = False
-    # Blocking call to listen for one message
-    for msg in current_app.pubsub.listen():
-        current_app.logger.debug('message = %s', msg)
-        if msg['type'] == 'message':
-            obj = json.loads(msg['data'])
-            if 'queryResponse' in obj:
-                qr = obj['queryResponse']
-                current_app.logger.debug('isValid = %s', qr)
-                break
-    return qr
+    while not current_app.redis.exists(word):
+        current_app.logger.debug('...waiting...')
+        sleep(0.5)
+    
+    qrStr = current_app.redis.get(word)
+    if qrStr == 'True':
+        return True
+    else:
+        return False
+
 
 #def isWordValid(word):
 #    url = "https://scrabblewordfinder.org/dictionary/" + word.lower()
@@ -363,7 +362,6 @@ def sendEmail(userId, moveInfoString):
     if user is None:
         return
 
-
     load_dotenv(dotenv_path='/var/www/.env')
     current_app.logger.debug('sending email to %s', user.email)
     
@@ -375,6 +373,31 @@ def sendEmail(userId, moveInfoString):
 {moveInfoString}!<br><br>
 Login at https://www.colinfox.dev to make your move.
         '''
+    )
+
+    try:
+        sg = SendGridAPIClient(os.getenv('SENDGRID_API_KEY'))
+        response = sg.send(message)
+        #current_app.logger.debug(response.status_code)
+        #current_app.logger.debug(response.body)
+        #current_app.logger.debug(response.headers)
+    except Exception as e:
+        current_app.logger.debug(str(e))
+
+def sendInviteEmail(userName, fromUserName):
+    # using SendGrid's Python Library
+    user = User.query.filter_by(username=userName).first()
+    if user is None:
+        return
+
+    load_dotenv(dotenv_path='/var/www/.env')
+    current_app.logger.debug('sending invite email to %s', user.email)
+    
+    message = Mail(
+        from_email='colin@inertialframe.dev',
+        to_emails=user.email,
+        subject=f"{fromUserName} has challenged you to a game of Scrabble!",
+        html_content='Login at https://www.colinfox.dev to accept or decline the invitation.'
     )
 
     try:

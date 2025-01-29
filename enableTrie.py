@@ -66,9 +66,8 @@ class TrieSearcher:
         self.trie = build_trie_from_file(WORDS_FILE)
 
     def isValid(self, word):
-        logger.debug('The word is %s', word)
         rv = word in self.trie
-        return rv
+        return str(rv)
 
     def makeMove(self, boardStr, bankStr):
         logger.debug('makeMove')
@@ -104,32 +103,21 @@ if __name__ == '__main__':
 
     r = Redis(host='localhost', port=6379, decode_responses=True)
 
-    # Create a pubsub object
-    pubsub = r.pubsub()
-
-    # Subscribe to the channel named "example_channel"
-    channel_name = "TrieChannel"
-    pubsub.subscribe(channel_name)
-
-    logger.debug("Subscribed to channel: %s", channel_name)
     logger.debug("Waiting for messages...")
 
-    # Blocking call to listen for messages
-    for message in pubsub.listen():
-
-        # The message is a dictionary with a 'type' field
-        if message['type'] == 'message':
-            msg = message['data']
-            cmd = json.loads(msg)
-            logger.debug('Received message: %s', cmd)
-
-            if 'query' in cmd:
-                logger.debug('Fulfilling query')
-                answer = {'queryResponse': ts.isValid(cmd['query'])}
-                r.publish(channel_name, json.dumps(answer))
-            elif 'moveRequest' in cmd:
-                logger.debug('Fulfilling moveRequest')
-                moveInfo = cmd['moveRequest']
-                move = ts.makeMove(moveInfo['boardStr'], moveInfo['bankStr'])
-                payload = {'moveResponse', json.dumps(move)}
-                r.publish(channel_name, json.dumps(payload))
+    while True:
+        message = r.xread({'TrieChannel': '$'}, None, 0)
+        
+        cmd = message[0][1][0][1]
+        
+        if 'query' in cmd:
+            word = cmd['query']
+            logger.debug('Checking word: %s', word)
+            result = ts.isValid(word)
+            r.set(word, result)
+        elif 'moveRequest' in cmd:
+            logger.debug('Fulfilling moveRequest')
+            moveInfo = cmd['moveRequest']
+            move = ts.makeMove(moveInfo['boardStr'], moveInfo['bankStr'])
+            #payload = {'moveResponse', json.dumps(move)}
+            #r.publish(channel_name, json.dumps(payload))

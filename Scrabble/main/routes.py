@@ -5,7 +5,7 @@ from Scrabble.main import bp
 from Scrabble.main.forms import LoginForm, SignupForm
 from Scrabble.main.forms import CreateGameForm
 from Scrabble.models import User, Invite, Game, Board, Chat
-from Scrabble.utils import TileFetcher, isLetter, scoreWords, sortAttempt, getFlatIndex, util_playWord, getUsername
+from Scrabble.utils import TileFetcher, isLetter, scoreWords, sortAttempt, getFlatIndex, util_playWord, getUsername, sendInviteEmail
 from Scrabble.prompt import AIPlayer
 import json
 import hashlib
@@ -122,6 +122,8 @@ def createGame():
         db.session.add(invite2)
 
         db.session.commit()
+
+        sendInviteEmail(user2.username, getUsername(player1))
 
         return redirect(url_for('main.home'))
 
