@@ -188,18 +188,19 @@ def util_playWord(user_id, board_id, attempt):
     if len(attempt) == 0:
         rv['ERROR'].append('Drag at least one letter to the board.')
 
+    if board.game.winner is not None:
+        rv['ERROR'].append('Game is over.')
+
     attemptList = sortAttempt(attempt, rv)
-
-
-    # build a set of attempt locations
-    #attemptIndices = set([ getFlatIndex(tup[0],tup[1]) for tup in attemptList ])
-    attemptIndices = { getFlatIndex(tup[0],tup[1]) : tup[2] for tup in attemptList }
-
+    
     # Done with basic validation
     if len(rv['ERROR']) > 0:
         current_app.logger.debug('%s',rv['ERROR'])
         return json.dumps(rv)
 
+    # build a set of attempt locations
+    attemptIndices = { getFlatIndex(tup[0],tup[1]) : tup[2] for tup in attemptList }
+    
     isStar = False
     isAdjacent = False
 
@@ -297,9 +298,12 @@ def util_playWord(user_id, board_id, attempt):
         return json.dumps(rv)
     score += thisScore
 
+    newmsg = []
+    
     # Check for bingo (50 points for using all 7 letters)
     if len(attemptList) == 7:
         score += 50
+        newmsg.append(' all 7 tiles for 50 bonus points')
 
     # Write in the new tiles
     for tup in attemptList:
@@ -319,12 +323,11 @@ def util_playWord(user_id, board_id, attempt):
     # check for game end
     board.game.checkForWinner()
 
-    newmsg = []
     for tup in wordScoreTuples:    
         newmsg.append(f' "{tup[0]}" for {tup[1]} points')
     
     if board.game.winner is not None:
-        newmsg.append(f'{getUsername(board.game.winner)} is the winner!!!')
+        newmsg.append(f' {getUsername(board.game.winner)} is the winner!!!')
     
     board.game.msg = f'{getUsername(user_id)} played ' + ','.join(newmsg)
     
