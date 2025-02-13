@@ -48,6 +48,7 @@ def isWordValid(word):
     current_app.redis.xadd('TrieChannel', qry)
     current_app.logger.debug("Validating word: %s", word)
 
+    # Wait for the key to appear in the redis key store
     while not current_app.redis.exists(word):
         current_app.logger.debug('...waiting...')
         sleep(0.5)
@@ -57,22 +58,6 @@ def isWordValid(word):
         return True
     else:
         return False
-
-
-#def isWordValid(word):
-#    url = "https://scrabblewordfinder.org/dictionary/" + word.lower()
-#    r = requests.get(url)
-#    lines = r.text.splitlines()
-#    idx = 0
-#    for line in lines:
-#        if 'check_dict_page' in line:
-#            result = lines[idx+3]
-#            if 'Yes' in result:
-#                return True
-#            else:
-#                return False
-#        else:
-#            idx += 1
 
 def isLetter(char):
     return char not in ['.','#','@','%','$','*']
@@ -177,7 +162,7 @@ class TileFetcher:
         return self.codes[code.lower()]
 
 
-def util_playWord(user_id, board_id, attempt):
+def util_playWord(user_id, board_id, attempt) -> str:
 
     rv = {'ERROR':[]}
 

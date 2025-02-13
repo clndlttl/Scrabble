@@ -1,7 +1,7 @@
 
 #from rq import get_current_job
 from Scrabble import create_app
-from Scrabble.prompt import AIPlayer, buildNudge
+#from Scrabble.prompt import AIPlayer, buildNudge
 from Scrabble.utils import util_playWord
 from Scrabble.models import Board
 import json
@@ -22,38 +22,34 @@ def trieSearch(board_id):
 
     try:
         moveInfo = {'boardStr': boardStr, 'bankStr': bankStr}
-        payload = {'moveRequest': moveInfo}
-        app.redis.publish('TrieChannel', json.dumps(payload))
-
+        app.redis.xadd('TrieChannel', moveInfo)
     except Exception as e:
         app.logger.critical(str(e))
-        return 
+        return
 
-    app.logger.debug("Sent moveRequest, waiting for moveResponse...")
+    app.logger.debug("Sent moveInfo, waiting for moveResponse...")
+    
     # Blocking call to listen for messages
-    message = app.pubsub.get_message()
+    message = app.redis.xread({'TrieChannel': '$'}, None, 0)
+    
+    resp = message[0][1][0][1]
     
     # The message is a dictionary with a 'type' field
-    if message['type'] == 'message':
-        data = message['data']
-        msg = json.loads(data)
-        app.logger.debug('Received message: %s', msg)
-        if 'moveResponse' in msg:
-            moveStr = msg['moveResponse']
-            app.logger.debug('move = %s', moveStr)
-            move = json.loads(moveStr)
+    if 'moveResponse' in resp:
+        move = json.loads(resp['moveResponse'])
+        app.logger.debug('move = %s', move)
 
-            # move is a list of tuples like [ (row,col,letter), ... ]
-            attempt = [{'letter':tup[2],'row':tup[0],'col':tup[1]} for tup in move]
+        # move is a list of tuples like [ (row,col,letter), ... ]
+        attempt = [{'letter':tup[2],'row':tup[0],'col':tup[1]} for tup in move]
         
-            rvStr = util_playWord(1, board_id, attempt)
+        rvStr = util_playWord(1, board_id, attempt)
         
-            rv = json.loads(rvStr)
+        rv = json.loads(rvStr)
         
-            if len(rv['ERROR']) > 0:
-                app.logger.debug('trieSearch error: %s', rv['ERROR'])
-            else:
-                app.logger.debug('trieSearch move success!')
+        if len(rv['ERROR']) > 0:
+            app.logger.debug('trieSearch error: %s', rv['ERROR'])
+        else:
+            app.logger.debug('trieSearch move success!')
 
 
 def makeChatGPTmove(board_id):

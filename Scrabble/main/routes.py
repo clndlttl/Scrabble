@@ -5,8 +5,7 @@ from Scrabble.main import bp
 from Scrabble.main.forms import LoginForm, SignupForm
 from Scrabble.main.forms import CreateGameForm
 from Scrabble.models import User, Invite, Game, Board, Chat
-from Scrabble.utils import TileFetcher, isLetter, scoreWords, sortAttempt, getFlatIndex, util_playWord, getUsername, sendInviteEmail
-from Scrabble.prompt import AIPlayer
+from Scrabble.utils import TileFetcher, util_playWord, getUsername, sendEmail, sendInviteEmail, launch_AI_task
 import json
 import hashlib
 import os
@@ -266,6 +265,12 @@ def swapTiles():
     board.game.advanceTurn()
 
     board.game.msg = f'{getUsername(current_user.id)} swapped {len(removed)} tiles'
+
+    # User 1 must be username AI
+    if board.game.whosUp == 1:
+        launch_AI_task(board_id)
+    else:
+        sendEmail(board.game.whosUp, board.game.msg)
     
     db.session.commit()
 
