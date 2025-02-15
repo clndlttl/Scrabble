@@ -41,7 +41,7 @@ COPY deployment/gunicorn.conf /etc/supervisor/conf.d/
 COPY deployment/rqworker.conf /etc/supervisor/conf.d/
 
 COPY Scrabble Scrabble
-COPY wsgi.py entrypoint.sh enable.txt enableTrie.py .env ./
+COPY wsgi.py entrypoint.sh enable.txt enableTrie.py gameUtils.py .env ./
 
 EXPOSE 80
 EXPOSE 443

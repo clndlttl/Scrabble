@@ -1,7 +1,5 @@
-
 #from rq import get_current_job
 from Scrabble import create_app
-#from Scrabble.prompt import AIPlayer, buildNudge
 from Scrabble.utils import util_playWord
 from Scrabble.models import Board
 import json
@@ -51,7 +49,7 @@ def trieSearch(board_id):
         else:
             app.logger.debug('trieSearch move success!')
 
-
+'''
 def makeChatGPTmove(board_id):
     board = Board.query.filter_by(id=board_id).first()
     if board is None:
@@ -87,3 +85,4 @@ def makeChatGPTmove(board_id):
         else:
             app.logger.debug('AI move success!')
             break
+'''

@@ -29,7 +29,7 @@ class SignupForm(FlaskForm):
 class CreateGameForm(FlaskForm):
     name = StringField('Nickname for this game', validators=[DataRequired(), Length(max=64)])
     random = BooleanField('Randomize this board?')
-    opponent = StringField('Opponent\'s username', default='Colin', validators=[DataRequired(), Length(max=64)])
+    opponent = StringField('Opponent\'s username', default='Bot', validators=[DataRequired(), Length(max=64)])
     submit = SubmitField('Create Game')
 
     def validate_opponent(self, opp):

@@ -1,20 +1,14 @@
 import os
+import json
+from time import sleep
 from dotenv import load_dotenv
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
-import json
-from time import sleep
 from flask import url_for, current_app
 from Scrabble import db
 from Scrabble.models import User, Board
+from gameUtils import *
 
-letterValues = {
-    'a':1, 'b':3,  'c':3, 'd':2, 'e':1,
-    'f':4, 'g':2,  'h':4, 'i':1, 'j':8,
-    'k':5, 'l':1,  'm':3, 'n':1, 'o':1,
-    'p':3, 'q':10, 'r':1, 's':1, 't':1,
-    'u':1, 'v':4,  'w':4, 'x':8, 'y':4, 'z':10
-}
 
 def getUsername(id):
     user = User.query.filter_by(id=id).first()
@@ -23,7 +17,7 @@ def getUsername(id):
     return user.username
 
 
-def sortAttempt(attempt, rv):
+def sortAttempt(attempt: list[dict[str,str]], errorList: list[str]) -> list[tuple[int,int,str]]:
     # attempt = [ {'letter':'a','row':'2','col':'7'}, ... ]
 
     # check if all rows are the same (also sort lo to hi)
@@ -34,23 +28,19 @@ def sortAttempt(attempt, rv):
 
     # ensure word is continuous
     if len(rows) != 1 and len(cols) != 1:
-        rv['ERROR'].append('Word is not continuous.')
+        errorList.append('Word is not continuous.')
 
     tuples = [(int(x['row']),int(x['col']),x['letter']) for x in attempt]
     tuples.sort()
     return tuples
 
-def getFlatIndex(row, col):
-    return 15*row + col
 
 def isWordValid(word):
     qry = {'query': word}
     current_app.redis.xadd('TrieChannel', qry)
-    current_app.logger.debug("Validating word: %s", word)
 
     # Wait for the key to appear in the redis key store
     while not current_app.redis.exists(word):
-        current_app.logger.debug('...waiting...')
         sleep(0.5)
     
     qrStr = current_app.redis.get(word)
@@ -59,10 +49,8 @@ def isWordValid(word):
     else:
         return False
 
-def isLetter(char):
-    return char not in ['.','#','@','%','$','*']
 
-def scoreWords(words, rv):
+def scoreWords(words, errorList: list[str]):
     '''
     words = {
         324: [('d',None),('o','.'),('g','#')], // this means 'd' was already played, and 'g' is double letter value
@@ -110,7 +98,7 @@ def scoreWords(words, rv):
 
         if not isWordValid(w):
             finalScore = 0
-            rv['ERROR'].append(f'"{w}" is not a valid word.')
+            errorList.append(f'"{w}" is not a valid word.')
             wordScoreTuples.clear()
             break
         else:
@@ -162,125 +150,56 @@ class TileFetcher:
         return self.codes[code.lower()]
 
 
-def util_playWord(user_id, board_id, attempt) -> str:
+def util_playWord(user_id: int, board_id: int, attempt: list[dict[str,str]]) -> str:
 
-    rv = {'ERROR':[]}
+    errorList = []
 
     board = Board.query.filter_by(id=board_id).first()
     if board is None:
-        rv['ERROR'].append('ERROR: Cannot find board')
+        errorList.append('ERROR: Cannot find board')
 
     if len(attempt) == 0:
-        rv['ERROR'].append('Drag at least one letter to the board.')
+        errorList.append('Drag at least one letter to the board.')
 
     if board.game.winner is not None:
-        rv['ERROR'].append('Game is over.')
+        errorList.append('Game is over.')
 
-    attemptList = sortAttempt(attempt, rv)
+    current_app.logger.debug('attempt: %s', attempt)
+
+    # Order and ensure continuity
+    attemptList = sortAttempt(attempt, errorList)
+    
+    current_app.logger.debug('attemptList: %s', attemptList)
     
     # Done with basic validation
-    if len(rv['ERROR']) > 0:
-        current_app.logger.debug('%s',rv['ERROR'])
-        return json.dumps(rv)
-
-    # build a set of attempt locations
-    attemptIndices = { getFlatIndex(tup[0],tup[1]) : tup[2] for tup in attemptList }
-    
-    isStar = False
-    isAdjacent = False
+    if len(errorList) > 0:
+        current_app.logger.debug('%s',errorList)
+        return json.dumps({'ERROR':errorList})
 
     _, bank, playerScore = board.game.getPlayerStuff(user_id)
 
-    words = {}
+    mat = board.getRows()
 
-    for letter in attemptList:
-
-        # letter is a tuple of (rowIdx, colIdx, letter)
-        row = letter[0]
-        col = letter[1]
-
-        # check for board adjacency first
-        isAdjacent |= board.isAdjacent(row, col)
- 
-        # what space does this letter cover?
-        space = board.getTile(row, col)
-        if space == '*':
-            isStar = True
-
-        # look for a horizontal word
-        w = []
-        hash = 0
-        # rewind to start of word
-        colStart = col
-        while colStart > 0 and (isLetter( board.getTile(row, colStart-1) ) or getFlatIndex(row, colStart-1) in attemptIndices):
-            colStart -= 1
-        # add first letter, noting if it's already there or new
-        fi = getFlatIndex(row,colStart)
-        hash += fi
-        if fi in attemptIndices:
-            w.append( (attemptIndices[fi], board.getTile(row, colStart)) )
-        else:
-            w.append( (board.getTile(row, colStart), None) )
-        # read out the word
-        colEnd = colStart
-        while colEnd < 14 and (isLetter( board.getTile(row, colEnd+1) ) or (getFlatIndex(row,colEnd+1) in attemptIndices)):
-            colEnd += 1
-            fi = getFlatIndex(row,colEnd)
-            hash += fi
-            if getFlatIndex(row,colEnd) in attemptIndices:
-                w.append( (attemptIndices[fi], board.getTile(row, colEnd)) )
-            elif isLetter( board.getTile(row,colEnd) ):
-                w.append( (board.getTile(row, colEnd), None) )
-            else:
-                rv['ERROR'].append('Word is not continuous.')
-        if colEnd != colStart:
-            words[hash] = w
-
-        # look for a vertical word
-        w = []
-        hash = 0
-        # rewind to start of word
-        rowStart = row
-        while rowStart > 0 and (isLetter( board.getTile(rowStart-1, col) ) or getFlatIndex(rowStart-1, col) in attemptIndices):
-            rowStart -= 1
-        # add first letter
-        fi = getFlatIndex(rowStart,col)
-        hash += fi
-        if getFlatIndex(rowStart,col) in attemptIndices:
-            w.append( (attemptIndices[fi], board.getTile(rowStart, col)) )
-        else:
-            w.append( (board.getTile(rowStart, col), None) )
-        # read out the word
-        rowEnd = rowStart
-        while rowEnd < 14 and (isLetter( board.getTile(rowEnd+1, col)) or (getFlatIndex(rowEnd+1,col) in attemptIndices)):
-            rowEnd += 1
-            fi = getFlatIndex(rowEnd,col)
-            hash += fi
-            if getFlatIndex(rowEnd,col) in attemptIndices:
-                w.append( (attemptIndices[fi], board.getTile(rowEnd, col)) )
-            elif isLetter( board.getTile(rowEnd, col) ):
-                w.append( (board.getTile(rowEnd, col), None) )
-            else:
-                rv['ERROR'].append('Word is not continuous.')
-        if rowEnd != rowStart:
-            words[hash] = w
+    ########
+    words, isStar, isAdj = findWords(mat, attemptList, errorList)
+    ########
 
     # word must touch at least one played tile, unless it's the first move
-    if board.game.numTilesPlayed() > 0 and not isAdjacent:
-        rv['ERROR'].append('Word must touch at least one other tile')
+    if board.game.numTilesPlayed() > 0 and not isAdj:
+        errorList.append('Word must touch at least one other tile')
     # first play must cover the star
     elif board.game.numTilesPlayed() == 0 and not isStar:
-        rv['ERROR'].append('First play must cover the logo tile')
+        errorList.append('First play must cover the logo tile')
     
-    if len(rv['ERROR']) > 0:
-        current_app.logger.debug('%s',rv['ERROR'])
-        return json.dumps(rv)
+    if len(errorList) > 0:
+        current_app.logger.debug('%s',errorList)
+        return json.dumps({'ERROR':errorList})
 
     # Validate and score all words
     score = 0
-    thisScore, wordScoreTuples = scoreWords(words, rv)
+    thisScore, wordScoreTuples = scoreWords(words, errorList)
     if thisScore == 0:
-        return json.dumps(rv)
+        return json.dumps({'ERROR':errorList})
     score += thisScore
 
     newmsg = []
@@ -318,13 +237,14 @@ def util_playWord(user_id, board_id, attempt) -> str:
     
     db.session.commit()
 
-    # User 1 must be username AI
+    # User 1 is the bot
     if board.game.whosUp == 1:
         launch_AI_task(board_id)
-    else:
+    elif user_id != 1:
+        # Don't send an email after bot plays
         sendEmail(board.game.whosUp, board.game.msg)
 
-    return json.dumps(rv)
+    return json.dumps({'ERROR':errorList})
 
 
 def launch_AI_task(board_id):

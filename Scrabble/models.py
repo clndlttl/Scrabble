@@ -215,6 +215,12 @@ class Board(db.Model):
     data = db.Column(MutableDict.as_mutable(db.PickleType), nullable=True, default=BLANK_BOARD)
     chats = db.relationship('Chat', backref='board', lazy='dynamic')
     
+    def getRows(self) -> list[list[str]]:
+        return self.data['rows']
+    
+    def setRows(self, mat: list[list[str]]):
+        self.data['rows'] = mat
+
     def setTile(self, row, col, char):
         tmp = self.data['rows']
         tmp[row][col] = char
@@ -223,23 +229,6 @@ class Board(db.Model):
     def getTile(self, row, col):
         tmp = self.data['rows']
         return tmp[row][col]
-
-    def isAdjacent(self, row, col):
-        tmp = self.data['rows']
-        nonletters = ['.','#','@','%','$','*']
-        # left
-        if col > 0 and tmp[row][col-1] not in nonletters:
-            return True
-        # right
-        if col < 14 and tmp[row][col+1] not in nonletters:
-            return True
-        # up
-        if row > 0 and tmp[row-1][col] not in nonletters:
-            return True
-        # down
-        if row < 14 and tmp[row+1][col] not in nonletters:
-            return True
-        return False
 
     def randomize(self):
         tmp = self.data['rows']
@@ -253,11 +242,10 @@ class Board(db.Model):
         self.data['rows'] = tmp
 
     def printBoard(self):
-        rv = ''
+        temp = []
         for row in self.data['rows']:
-            rv += ''.join(row)
-            rv += '\n'
-        return rv
+            temp.append(''.join(row))
+        return '\n'.join(temp)
 
 
 

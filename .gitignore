@@ -3,6 +3,7 @@ logs/
 database/
 ssl/fullchain.pem
 ssl/privkey.pem
+__pycache__/
 Scrabble/__pycache__/
 Scrabble/main/__pycache__/
 
