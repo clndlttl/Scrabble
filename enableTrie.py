@@ -69,11 +69,15 @@ def dfs(node, path: list[str], letters_left: set[str], constraints: dict[int,str
 
 
 class TrieSearcher:
-    def __init__(self):
+    def __init__(self, redisObj):
+        self.redis = redisObj
         self.trie = build_trie_from_file(WORDS_FILE)
 
-    def isValid(self, word):
-        return word in self.trie
+    def validate(self, word: str) -> bool:
+        isValid = word in self.trie
+        if isValid:
+            self.redis.set(word, '1')
+        return isValid
     
     def scoreWords(self, words: dict[int, str]) -> int:
         '''
@@ -117,7 +121,7 @@ class TrieSearcher:
                     thisScore += letterValues[letter]
                     wordBonus *= 3
     
-            if not self.isValid(w):
+            if not self.validate(w):
                 finalScore = 0
                 break
             else:
@@ -126,10 +130,9 @@ class TrieSearcher:
         return finalScore
 
 
-    def makeMove(self, boardStr, bankStr):
-        logger.debug('makeMove')
+    def makeMove(self, boardStr: str, bankStr: str) -> None:
+        logger.debug('makeMove...')
 
-        logger.debug('%s', boardStr)
         bank = list(bankStr)
         N = len(bank)
 
@@ -326,18 +329,23 @@ class TrieSearcher:
                     bestMoves.append(move)
 
         if len(bestMoves) == 0:
-            return None
+            logger.debug('...move not found!')
+            rv = {'moveResponse': json.dumps(None)}
         else:
             q = random.randint(0,len(bestMoves)-1)
-            return bestMoves[q]
+            move = bestMoves[q]
+            logger.debug('...Found move: %s', move)
+            rv = {'moveResponse': json.dumps(move)}
+        self.redis.xadd('TrieChannel', rv)
 
 
 if __name__ == '__main__':
 
-    ts = TrieSearcher()
     
     r = Redis(host='localhost', port=6379, decode_responses=True)
 
+    ts = TrieSearcher(r)
+    
     logger.debug("Waiting for messages...")
 
     while True:
@@ -349,14 +357,10 @@ if __name__ == '__main__':
         
             if 'query' in cmd:
                 word = cmd['query']
-                logger.debug('Checking word: %s', word)
-                result = 'True' if ts.isValid(word) else 'False'
-                r.set(word, result)
+                isValid = ts.validate(word)
+                logger.debug('%s is %s', word, isValid)
             elif 'boardStr' in cmd and 'bankStr' in cmd:
-                logger.debug('Making a move')
-                move = ts.makeMove(cmd['boardStr'], cmd['bankStr'])
-                rv = {'moveResponse': json.dumps(move)}
-                r.xadd('TrieChannel', rv)
+                ts.makeMove(cmd['boardStr'], cmd['bankStr'])
         
         except Exception as e:
             logger.critical(str(e))

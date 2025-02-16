@@ -36,18 +36,16 @@ def sortAttempt(attempt: list[dict[str,str]], errorList: list[str]) -> list[tupl
 
 
 def isWordValid(word):
+
+    if current_app.redis.exists(word):
+        return True
+
     qry = {'query': word}
     current_app.redis.xadd('TrieChannel', qry)
 
     # Wait for the key to appear in the redis key store
-    while not current_app.redis.exists(word):
-        sleep(0.5)
-    
-    qrStr = current_app.redis.get(word)
-    if qrStr == 'True':
-        return True
-    else:
-        return False
+    sleep(1)
+    return current_app.redis.exists(word)
 
 
 def scoreWords(words, errorList: list[str]):
@@ -150,7 +148,7 @@ class TileFetcher:
         return self.codes[code.lower()]
 
 
-def util_playWord(user_id: int, board_id: int, attempt: list[dict[str,str]], prevMsg: str = '') -> str:
+def util_playWord(user_id: int, board_id: int, attempt: list[dict[str,str]], prevMsg: str = '', iamabot: bool = False) -> str:
 
     errorList = []
 
@@ -240,7 +238,7 @@ def util_playWord(user_id: int, board_id: int, attempt: list[dict[str,str]], pre
     db.session.commit()
 
     # User 1 is the bot
-    if board.game.whosUp == 1:
+    if board.game.whosUp == 1 and len(prevMsg) == 0:
         runBot(board_id, currMsg)
     elif user_id != 1:
         # Don't send an email after bot plays
@@ -249,7 +247,7 @@ def util_playWord(user_id: int, board_id: int, attempt: list[dict[str,str]], pre
     return json.dumps({'ERROR':errorList})
 
 
-def util_swap(user_id: int, board_id: int, word: str, prevMsg: str = '') -> str:
+def util_swap(user_id: int, board_id: int, word: str, prevMsg: str = '', iamabot: bool = False) -> str:
     
     errorList = []
 
@@ -289,7 +287,7 @@ def util_swap(user_id: int, board_id: int, word: str, prevMsg: str = '') -> str:
     db.session.commit()
     
     # User 1 must be the Bot
-    if board.game.whosUp == 1:
+    if board.game.whosUp == 1 and not iamabot:
         runBot(board_id, currMsg)
     elif user_id != 1:
         sendEmail(board.game.whosUp, board.game.msg)
@@ -328,11 +326,11 @@ def runBot(board_id: int, prevMsg: str):
 
         if move == 'null':
             # Bot couldn't find a move, just swap all tiles
-            rvStr = util_swap(1, board_id, bankStr, prevMsg=prevMsg)
+            rvStr = util_swap(1, board_id, bankStr, prevMsg=prevMsg, iamabot=True)
         else:
             # move is a list of tuples like [ (row,col,letter), ... ]
             attempt = [{'letter':tup[2],'row':tup[0],'col':tup[1]} for tup in move]
-            rvStr = util_playWord(1, board_id, attempt, prevMsg=prevMsg)
+            rvStr = util_playWord(1, board_id, attempt, prevMsg=prevMsg, iamabot=True)
         
         rv = json.loads(rvStr)
         
