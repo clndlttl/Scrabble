@@ -5,7 +5,7 @@ from Scrabble.main import bp
 from Scrabble.main.forms import LoginForm, SignupForm
 from Scrabble.main.forms import CreateGameForm
 from Scrabble.models import User, Invite, Game, Board, Chat
-from Scrabble.utils import TileFetcher, util_playWord, getUsername, sendEmail, sendInviteEmail, launch_AI_task
+from Scrabble.utils import TileFetcher, util_playWord, util_swap, getUsername, sendInviteEmail
 import json
 import hashlib
 import os
@@ -233,49 +233,10 @@ def swapTiles():
     swap = json.loads(request.values.get('swap'))
     word = ''.join(swap)
 
-    rv = {'ERROR':[]}
+    rv = util_swap(current_user.id, board_id, word)
 
-    board = Board.query.filter_by(id=board_id).first()
-    if board is None:
-        rv['ERROR'].append('ERROR: Cannot find board.')
+    return rv
 
-    if word == '':
-        rv['ERROR'].append('Drag 1 to 7 letters to the swap area, then press swap')
-
-    if len(word) > len(board.game.pool):
-        rv['ERROR'].append(f'Swap failed: only {len(board.game.pool)} letters left in the pool!')
-
-    # Done with basic validation
-    if len(rv['ERROR']) > 0:
-        return json.dumps(rv)
-
-    removed = []
-    idx, bank, _ = board.game.getPlayerStuff(current_user.id)
-    bankList = list(bank)
-
-    for letter in word.lower():
-        bankList.remove(letter)
-        removed.append(letter)
-
-    board.game.setBank(idx, ''.join(bankList))
-    board.game.refillBank(idx)
-    board.game.returnToPool(''.join(removed))
-
-    # advance turn
-    board.game.advanceTurn()
-
-    board.game.msg = f'{getUsername(current_user.id)} swapped {len(removed)} tiles'
-
-    # User 1 must be username AI
-    if board.game.whosUp == 1:
-        launch_AI_task(board_id)
-    else:
-        sendEmail(board.game.whosUp, board.game.msg)
-    
-    db.session.commit()
-
-
-    return json.dumps(rv)
 
 @bp.route('/postChat', methods=['POST'])
 @login_required

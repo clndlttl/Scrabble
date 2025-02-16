@@ -38,7 +38,7 @@ RUN service nginx reload
 
 # supervisor
 COPY deployment/gunicorn.conf /etc/supervisor/conf.d/
-COPY deployment/rqworker.conf /etc/supervisor/conf.d/
+#COPY deployment/rqworker.conf /etc/supervisor/conf.d/
 
 COPY Scrabble Scrabble
 COPY wsgi.py entrypoint.sh enable.txt enableTrie.py gameUtils.py .env ./

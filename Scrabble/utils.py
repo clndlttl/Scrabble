@@ -150,7 +150,7 @@ class TileFetcher:
         return self.codes[code.lower()]
 
 
-def util_playWord(user_id: int, board_id: int, attempt: list[dict[str,str]]) -> str:
+def util_playWord(user_id: int, board_id: int, attempt: list[dict[str,str]], prevMsg: str = '') -> str:
 
     errorList = []
 
@@ -233,13 +233,15 @@ def util_playWord(user_id: int, board_id: int, attempt: list[dict[str,str]]) -> 
     if board.game.winner is not None:
         newmsg.append(f' {getUsername(board.game.winner)} is the winner!!!')
     
-    board.game.msg = f'{getUsername(user_id)} played ' + ','.join(newmsg)
+    currMsg = f'{getUsername(user_id)} played ' + ','.join(newmsg) + '. '
     
+    board.game.msg = f'{prevMsg}{currMsg}'
+
     db.session.commit()
 
     # User 1 is the bot
     if board.game.whosUp == 1:
-        launch_AI_task(board_id)
+        runBot(board_id, currMsg)
     elif user_id != 1:
         # Don't send an email after bot plays
         sendEmail(board.game.whosUp, board.game.msg)
@@ -247,22 +249,98 @@ def util_playWord(user_id: int, board_id: int, attempt: list[dict[str,str]]) -> 
     return json.dumps({'ERROR':errorList})
 
 
-def launch_AI_task(board_id):
-    #taskName = f'socket_{port}'
-    #found = Task.query.filter_by(name=taskName).first()
-    #if found:
-    #    if not found.complete:
-    #        return
-    #    Task.query.filter_by(name=taskName).delete()
-    #    db.session.commit()
+def util_swap(user_id: int, board_id: int, word: str, prevMsg: str = '') -> str:
     
-    args = [board_id]
-    #rq_job = current_app.task_queue.enqueue('Scrabble.task.makeChatGPTmove', *args, job_timeout=120)
-    _ = current_app.task_queue.enqueue('Scrabble.task.trieSearch', *args, job_timeout=120)
+    errorList = []
+
+    board = Board.query.filter_by(id=board_id).first()
+    if board is None:
+        errorList.append('ERROR: Cannot find board.')
+
+    if word == '':
+        errorList.append('Drag 1 to 7 letters to the swap area, then press swap')
+
+    if len(word) > len(board.game.pool):
+        errorList.append(f'Swap failed: only {len(board.game.pool)} letters left in the pool!')
+
+    # Done with basic validation
+    if len(errorList) > 0:
+        return json.dumps({'ERROR':errorList})
+
+    removed = []
+    idx, bank, _ = board.game.getPlayerStuff(user_id)
+    bankList = list(bank)
+
+    for letter in word.lower():
+        bankList.remove(letter)
+        removed.append(letter)
+
+    board.game.setBank(idx, ''.join(bankList))
+    board.game.refillBank(idx)
+    board.game.returnToPool(''.join(removed))
+
+    # advance turn
+    board.game.advanceTurn()
+
+    currMsg = f'{getUsername(user_id)} swapped {len(removed)} tiles. '
+
+    board.game.msg = f'{prevMsg}{currMsg}'
+
+    db.session.commit()
     
-    #task = Task(id=rq_job.get_id(), name=taskName, timeout_sec=-1)
-    #db.session.add(task)
-    #db.session.commit()
+    # User 1 must be the Bot
+    if board.game.whosUp == 1:
+        runBot(board_id, currMsg)
+    elif user_id != 1:
+        sendEmail(board.game.whosUp, board.game.msg)
+    
+
+    return json.dumps({'ERROR':errorList})
+
+
+def runBot(board_id: int, prevMsg: str):
+    board = Board.query.filter_by(id=board_id).first()
+    if board is None:
+        return
+    
+    boardStr = board.printBoard()
+
+    _, bankStr, _ = board.game.getPlayerStuff(1)
+
+    try:
+        moveInfo = {'boardStr': boardStr, 'bankStr': bankStr}
+        current_app.redis.xadd('TrieChannel', moveInfo)
+    except Exception as e:
+        current_app.logger.critical(str(e))
+        return
+
+    current_app.logger.debug("Sent moveInfo, waiting for moveResponse...")
+    
+    # Blocking call to listen for messages
+    message = current_app.redis.xread({'TrieChannel': '$'}, None, 0)
+    
+    resp = message[0][1][0][1]
+    
+    # The message is a dictionary with a 'type' field
+    if 'moveResponse' in resp:
+        move = json.loads(resp['moveResponse'])
+        current_app.logger.debug('move = %s', move)
+
+        if move == 'null':
+            # Bot couldn't find a move, just swap all tiles
+            rvStr = util_swap(1, board_id, bankStr, prevMsg=prevMsg)
+        else:
+            # move is a list of tuples like [ (row,col,letter), ... ]
+            attempt = [{'letter':tup[2],'row':tup[0],'col':tup[1]} for tup in move]
+            rvStr = util_playWord(1, board_id, attempt, prevMsg=prevMsg)
+        
+        rv = json.loads(rvStr)
+        
+        if len(rv['ERROR']) > 0:
+            current_app.logger.debug('trieSearch error: %s', rv['ERROR'])
+        else:
+            current_app.logger.debug('trieSearch move success!')
+
 
 def sendEmail(userId, moveInfoString):
     # using SendGrid's Python Library
