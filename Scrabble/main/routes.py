@@ -122,7 +122,9 @@ def createGame():
 
         db.session.commit()
 
-        sendInviteEmail(user2.username, getUsername(player1))
+        if user2.id != 1:
+            # Don't email the Bot
+            sendInviteEmail(user2.username, getUsername(player1))
 
         return redirect(url_for('main.home'))
 

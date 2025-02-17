@@ -354,7 +354,7 @@ def sendEmail(userId, moveInfoString):
         to_emails=user.email,
         subject="It's your move in Scrabble!",
         html_content=f'''
-{moveInfoString}!<br><br>
+{moveInfoString}<br><br>
 Login at https://www.colinfox.dev to make your move.
         '''
     )
